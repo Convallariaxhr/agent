@@ -1,4 +1,22 @@
-.superpowers/
-.env
+# Binaries
 *.exe
-convallaria
+/convallaria
+/convallaria.exe
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Dependencies
+vendor/
+
+# Build artifacts
+dist/
+
+# Superpowers
+.superpowers/
