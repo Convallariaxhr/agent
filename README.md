@@ -135,7 +135,6 @@ guardrails:
 ## 已知限制
 
 - 向量嵌入记忆检索尚未实现（当前使用关键词搜索）
-- 仅支持 DeepSeek provider，OpenAI/Anthropic 待实现
 - 凭据存储在内存中（非 OS keychain）
 - 上下文压缩使用简单截断（非 LLM 摘要）
 - 仅支持 Go 项目（Build/Vet/Test 校验器使用 go 工具链）

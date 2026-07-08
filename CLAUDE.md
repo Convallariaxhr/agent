@@ -62,12 +62,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 2. writing-plans | ✅ 完成 | `docs/superpowers/plans/2026-07-08-convallaria-implementation.md` |
 | 冷启动验证 | ✅ 完成 | 两轮验证，修复 13 个问题 |
 | 3. using-git-worktrees | ✅ 完成 | worktree `phase-1-scaffold` 已创建 |
-| 4. subagent-driven-development | ✅ 完成 | 12 个 Phase 全部实现，48 个测试通过 |
-| 5. test-driven-development | 🔜 下一步 | |
-| 6. requesting-code-review | 🔜 | |
-| 7. finishing-a-development-branch | 🔜 | |
+| 4. subagent-driven-development | ✅ 完成 | 12 个 Phase 全部实现，52 个测试通过 |
+| 5. test-driven-development | ✅ 完成 | TDD 驱动所有模块开发 |
+| 6. requesting-code-review | ✅ 完成 | 发现 16 个问题，修复 9 个 Critical/Important |
+| 7. finishing-a-development-branch | ✅ 完成 | 已合并到 master，Docker 镜像已构建 |
 
-**下一步**：使用 `requesting-code-review` 进行代码审查，然后合并分支。
+**项目状态**：✅ 全部完成，含 Docker 部署 + CI/CD。
 
 ## 关键文件
 
