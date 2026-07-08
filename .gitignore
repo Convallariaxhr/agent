@@ -21,6 +21,9 @@ dist/
 # Superpowers
 .superpowers/
 
+# Claude Code
+.claude/
+
 # Database
 *.db
 *.db-shm
