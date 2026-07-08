@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -47,6 +48,7 @@ func New(config Config, ag *agent.Agent, sessMgr *session.Manager) *Server {
 func (s *Server) routes() {
 	s.mux.HandleFunc("/api/chat", s.handleChat)
 	s.mux.HandleFunc("/api/approve", s.handleApprove)
+	s.mux.HandleFunc("/api/files", s.handleFiles)
 	s.mux.HandleFunc("/api/sessions", s.handleSessions)
 	s.mux.HandleFunc("/api/sessions/", s.handleSessionByID)
 	if s.config.StaticDir != "" {
@@ -180,7 +182,21 @@ func (s *Server) handleSessionByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// jsonEncode safely marshals a value to JSON for SSE data payloads.
+// listDir returns a list of files/dirs in the given directory.
+func listDir(dir string) ([]map[string]any, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var result []map[string]any
+	for _, e := range entries {
+		result = append(result, map[string]any{
+			"name":  e.Name(),
+			"isDir": e.IsDir(),
+		})
+	}
+	return result, nil
+}
 func jsonEncode(v any) string {
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -234,4 +250,25 @@ func (s *Server) handleApprove(w http.ResponseWriter, r *http.Request) {
 	ch <- agent.ApprovalResponse{Allowed: req.Allowed, AlwaysAllow: req.AlwaysAllow}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	dir := r.URL.Query().Get("dir")
+	if dir == "" {
+		dir = "."
+	}
+
+	entries, err := listDir(dir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entries)
 }

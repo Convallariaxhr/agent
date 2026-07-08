@@ -511,3 +511,44 @@ html, body {
 .btn-allow-once:hover {
     background: #d0b9ff;
 }
+
+/* === File Tree === */
+.file-entry {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: default;
+    font-family: var(--font-mono);
+    color: var(--color-on-surface-dim);
+}
+
+.file-entry.is-dir {
+    color: var(--color-primary);
+}
+
+.file-entry:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* === Config Panel === */
+.config-section {
+    margin-bottom: 16px;
+}
+
+.config-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-on-surface-dim);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.config-value {
+    font-size: 14px;
+    color: var(--color-on-surface);
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+}

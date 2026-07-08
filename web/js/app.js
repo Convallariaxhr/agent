@@ -55,9 +55,9 @@ class ConvallariaApp {
         this.el.btnNewChat.addEventListener('click', () => this.newChat());
 
         // Panel toggles
-        this.el.btnToggleFiles.addEventListener('click', () => this.togglePanel('file'));
+        this.el.btnToggleFiles.addEventListener('click', () => { this.togglePanel('file'); this.loadFiles(); });
         this.el.btnCloseFiles.addEventListener('click', () => this.togglePanel('file'));
-        this.el.btnToggleConfig.addEventListener('click', () => this.togglePanel('config'));
+        this.el.btnToggleConfig.addEventListener('click', () => { this.togglePanel('config'); this.loadConfig(); });
         this.el.btnCloseConfig.addEventListener('click', () => this.togglePanel('config'));
     }
 
@@ -250,6 +250,47 @@ class ConvallariaApp {
         } else {
             panel.setAttribute('hidden', '');
         }
+    }
+
+    async loadFiles() {
+        try {
+            const resp = await fetch('/api/files?dir=.');
+            const entries = await resp.json();
+            const tree = document.getElementById('file-tree');
+            if (!entries || !entries.length) {
+                tree.innerHTML = '<p class="empty-state">No files found</p>';
+                return;
+            }
+            tree.innerHTML = entries.map(e =>
+                `<div class="file-entry ${e.isDir ? 'is-dir' : 'is-file'}">
+                    ${e.isDir ? '📁' : '📄'} ${this.escapeHtml(e.name)}
+                </div>`
+            ).join('');
+        } catch (e) {
+            console.error('Failed to load files:', e);
+        }
+    }
+
+    loadConfig() {
+        const content = document.getElementById('config-content');
+        content.innerHTML = `
+            <div class="config-section">
+                <label class="config-label">LLM Provider</label>
+                <p class="config-value">deepseek</p>
+            </div>
+            <div class="config-section">
+                <label class="config-label">Model</label>
+                <p class="config-value">deepseek-chat</p>
+            </div>
+            <div class="config-section">
+                <label class="config-label">Server Port</label>
+                <p class="config-value">8080</p>
+            </div>
+            <div class="config-section">
+                <label class="config-label">Database</label>
+                <p class="config-value">convallaria.db (SQLite)</p>
+            </div>
+        `;
     }
 
     // ── Helpers ─────────────────────────────────────────
