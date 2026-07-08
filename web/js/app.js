@@ -113,12 +113,18 @@ class ConvallariaApp {
     async loadMessages(sessionId) {
         try {
             const resp = await fetch(`/api/sessions/${sessionId}`);
-            if (!resp.ok) return;
+            if (!resp.ok) {
+                console.error('loadMessages failed:', resp.status);
+                this.appendMessage('system', `Failed to load messages (${resp.status})`);
+                return;
+            }
             const msgs = await resp.json();
+            console.log('loadMessages got', msgs.length, 'messages for', sessionId);
             this.clearMessages();
             msgs.forEach(m => this.appendMessage(m.role, m.content));
         } catch (e) {
             console.error('Failed to load messages:', e);
+            this.appendMessage('system', `Error: ${e.message}`);
         }
     }
 
