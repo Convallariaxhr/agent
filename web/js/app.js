@@ -116,7 +116,7 @@ class ConvallariaApp {
             if (!resp.ok) return;
             const msgs = await resp.json();
             this.clearMessages();
-            msgs.forEach(m => this.appendMessage(m.Role, m.Content));
+            msgs.forEach(m => this.appendMessage(m.role, m.content));
         } catch (e) {
             console.error('Failed to load messages:', e);
         }
