@@ -82,7 +82,8 @@ func (m *MockProvider) ChatSync(ctx context.Context, messages []Message) (*Respo
 		m.callCount++
 		return resp, nil
 	}
-	return &Response{Text: "", StopReason: "stop"}, nil
+	m.callCount++
+		return &Response{Text: "", StopReason: "stop"}, nil
 }
 
 // CallCount returns the number of times Chat/ChatSync has been called.
