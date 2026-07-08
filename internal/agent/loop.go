@@ -29,7 +29,6 @@ type Agent struct {
 	tools     *tools.Registry
 	guardrail *guardrail.Guardrail
 	feedback  *feedback.Loop
-	messages  []llm.Message
 }
 
 // New creates a new Agent with default tools and mechanisms.
@@ -58,18 +57,17 @@ func New(config Config) *Agent {
 }
 
 // Run executes the agent main loop for a single user input.
+// It is safe for concurrent use: all state is local to the call.
 func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
-	// 1. Build initial context
-	a.messages = []llm.Message{
+	// 1. Build initial context (local to this call — no shared state)
+	messages := []llm.Message{
 		{Role: "system", Content: a.systemPrompt()},
 		{Role: "user", Content: userInput},
 	}
 
-	var finalText string
-
 	for turn := 0; turn < a.config.MaxTurns; turn++ {
 		// 2. Call LLM
-		resp, err := a.config.Provider.ChatSync(ctx, a.messages)
+		resp, err := a.config.Provider.ChatSync(ctx, messages)
 		if err != nil {
 			return "", fmt.Errorf("llm call: %w", err)
 		}
@@ -79,16 +77,15 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 
 		// 4. Stop condition: pure text response
 		if actions.IsStop() {
-			finalText = resp.Text
-			a.messages = append(a.messages, llm.Message{
+			messages = append(messages, llm.Message{
 				Role:    "assistant",
 				Content: resp.Text,
 			})
-			return finalText, nil
+			return resp.Text, nil
 		}
 
 		// 5. Append assistant message with tool calls
-		a.messages = append(a.messages, llm.Message{
+		messages = append(messages, llm.Message{
 			Role:      "assistant",
 			Content:   resp.Text,
 			ToolCalls: resp.ToolCalls,
@@ -97,10 +94,19 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 		// 6. Execute each action
 		codeModified := false
 		for _, action := range actions {
-			// 6a. Guardrail check
+			// 6a. Check for parse errors
+			if action.ParseError != nil {
+				messages = append(messages, llm.Message{
+					Role:       "tool",
+					Content:    fmt.Sprintf("ERROR: failed to parse arguments: %v", action.ParseError),
+					ToolCallID: action.ToolCallID,
+				})
+				continue
+			}
+
+			// 6b. Guardrail check
 			if reason := a.guardrail.Check(action.Tool, action.Params); reason != nil {
-				// Blocked: inject rejection as tool result
-				a.messages = append(a.messages, llm.Message{
+				messages = append(messages, llm.Message{
 					Role:       "tool",
 					Content:    fmt.Sprintf("BLOCKED: %s - %s", reason.Level, reason.Message),
 					ToolCallID: action.ToolCallID,
@@ -108,11 +114,21 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 				continue
 			}
 
-			// 6b. Execute tool
-			result, err := a.tools.Execute(ctx, action.Tool, action.Params)
+			// 6c. Inject workspace into params for shell/git tools
+			params := action.Params
+			if action.Tool == "shell_run" || action.Tool == "git" || action.Tool == "test_run" {
+				if params == nil {
+					params = make(map[string]any)
+				}
+				if _, ok := params["workspace"]; !ok {
+					params["workspace"] = a.config.Workspace
+				}
+			}
+
+			// 6d. Execute tool
+			result, err := a.tools.Execute(ctx, action.Tool, params)
 			if err != nil {
-				// Execution error
-				a.messages = append(a.messages, llm.Message{
+				messages = append(messages, llm.Message{
 					Role:       "tool",
 					Content:    fmt.Sprintf("ERROR: %v", err),
 					ToolCallID: action.ToolCallID,
@@ -120,24 +136,24 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 				continue
 			}
 
-			// 6c. Append tool result
+			// 6e. Append tool result
 			content := result.Output
 			if !result.Success {
 				content = "ERROR: " + result.Error + "\n" + result.Output
 			}
-			a.messages = append(a.messages, llm.Message{
+			messages = append(messages, llm.Message{
 				Role:       "tool",
 				Content:    content,
 				ToolCallID: action.ToolCallID,
 			})
 
 			// Track if code files were modified
-			if action.Tool == "file_write" || action.Tool == "shell_run" {
+			if action.Tool == "file_write" {
 				codeModified = true
 			}
 		}
 
-		// 6d. Feedback loop: run once per turn after all actions
+		// 6f. Feedback loop: run once per turn, only when code was modified
 		if codeModified {
 			fbResult := a.feedback.Run(ctx, a.config.Workspace)
 			if fbResult.Status == "failed" {
@@ -147,7 +163,7 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 					Errors:  fbResult.Errors,
 					Summary: fmt.Sprintf("%s failed: %d error(s)", fbResult.Stage, len(fbResult.Errors)),
 				}
-				a.messages = append(a.messages, fb.ToMessage())
+				messages = append(messages, fb.ToMessage())
 			}
 		}
 	}
@@ -159,15 +175,15 @@ func (a *Agent) systemPrompt() string {
 	if a.config.SystemPrompt != "" {
 		return a.config.SystemPrompt
 	}
-	return `You are Convallaria, a coding agent. You help users write, modify, and test code.
-You have access to the following tools:
-- file_read(path): Read a file
-- file_write(path, content): Write a file
-- shell_run(command): Run a shell command
-- search(pattern, path): Search for a pattern in files
-- test_run(path): Run tests
-- git(operation, ...): Git operations
-
-Always think step by step. When you write code, you will receive automated feedback
-from the build system, linter, and test runner. Use this feedback to fix issues.`
+	return "You are Convallaria, a coding agent. You help users write, modify, and test code.\n" +
+		"You have access to the following tools:\n" +
+		"- file_read(path): Read a file\n" +
+		"- file_write(path, content): Write a file\n" +
+		"- shell_run(command): Run a shell command\n" +
+		"- search(pattern, path): Search for a pattern in files\n" +
+		"- test_run(path): Run tests\n" +
+		"- git(operation, ...): Git operations\n" +
+		"\n" +
+		"Always think step by step. When you write code, you will receive automated feedback\n" +
+		"from the build system, linter, and test runner. Use this feedback to fix issues."
 }

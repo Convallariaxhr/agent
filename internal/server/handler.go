@@ -67,6 +67,15 @@ type chatRequest struct {
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
+	// Handle CORS preflight
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -91,16 +100,16 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	s.sessions.AddMessage(sessID, llm.Message{Role: "user", Content: req.Message})
 
 	sse := NewSSEWriter(w)
-	sse.WriteEvent("session", fmt.Sprintf(`{"id":"%s"}`, sessID))
+	sse.WriteEvent("session", jsonEncode(map[string]string{"id": sessID}))
 
 	resp, err := s.agent.Run(r.Context(), req.Message)
 	if err != nil {
-		sse.WriteEvent("error", fmt.Sprintf(`{"message":"%s"}`, err.Error()))
+		sse.WriteEvent("error", jsonEncode(map[string]string{"message": err.Error()}))
 		return
 	}
 
 	for _, r := range resp {
-		sse.WriteEvent("token", fmt.Sprintf(`{"token":"%s"}`, string(r)))
+		sse.WriteEvent("token", jsonEncode(map[string]string{"token": string(r)}))
 	}
 	sse.WriteEvent("done", `{}`)
 
@@ -140,4 +149,13 @@ func (s *Server) handleSessionByID(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+// jsonEncode safely marshals a value to JSON for SSE data payloads.
+func jsonEncode(v any) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return `{"error":"json encode failed"}`
+	}
+	return string(data)
 }

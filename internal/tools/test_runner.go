@@ -16,10 +16,15 @@ func (t *TestRunner) Execute(ctx context.Context, params map[string]any) (*Resul
 	args := []string{"test", "-json"}
 	if testPath != "" {
 		args = append(args, testPath)
+	} else {
+		args = append(args, "./...")
 	}
-	args = append(args, "./...")
 
 	cmd := exec.CommandContext(ctx, "go", args...)
+	// Set working directory if provided
+	if ws, ok := params["workspace"].(string); ok && ws != "" {
+		cmd.Dir = ws
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &Result{

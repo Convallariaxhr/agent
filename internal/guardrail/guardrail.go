@@ -45,7 +45,6 @@ var defaultDangerousPatterns = []string{
 }
 
 var gitDangerousOps = map[string]bool{
-	"push --force": true,
 	"reset --hard": true,
 	"clean -fdx":   true,
 }

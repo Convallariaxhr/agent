@@ -31,6 +31,10 @@ func (s *ShellRunner) Execute(ctx context.Context, params map[string]any) (*Resu
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
+	// Set working directory if provided
+	if ws, ok := params["workspace"].(string); ok && ws != "" {
+		cmd.Dir = ws
+	}
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

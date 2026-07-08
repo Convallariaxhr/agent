@@ -2,10 +2,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/Convallariaxhr/convallaria/internal/agent"
 	"github.com/Convallariaxhr/convallaria/internal/config"
@@ -61,7 +65,25 @@ func main() {
 	}, ag, sessMgr)
 
 	fmt.Printf("Convallaria starting on http://localhost:%d\n", *port)
-	if err := srv.Start(); err != nil {
-		log.Fatalf("Server error: %v", err)
+
+	// Start server in background
+	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", *port), Handler: srv}
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	fmt.Println("\nShutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Fatalf("Shutdown error: %v", err)
 	}
+	fmt.Println("Server stopped.")
 }

@@ -31,6 +31,10 @@ func (g *GitOps) Execute(ctx context.Context, params map[string]any) (*Result, e
 	}
 
 	cmd := exec.CommandContext(ctx, "git", args...)
+	// Set working directory if provided
+	if ws, ok := params["workspace"].(string); ok && ws != "" {
+		cmd.Dir = ws
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &Result{
