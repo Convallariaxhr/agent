@@ -17,18 +17,25 @@ var ErrMaxTurnsExceeded = errors.New("max turns exceeded")
 
 // Config configures the agent.
 type Config struct {
-	MaxTurns     int
-	Provider     llm.Provider
-	Workspace    string
-	SystemPrompt string
+	MaxTurns        int
+	Provider        llm.Provider
+	Workspace       string
+	SystemPrompt    string
+	ApprovalHandler ApprovalHandler
 }
 
 // Agent is the core harness that runs the agent loop.
 type Agent struct {
-	config    Config
-	tools     *tools.Registry
-	guardrail *guardrail.Guardrail
-	feedback  *feedback.Loop
+	config          Config
+	tools           *tools.Registry
+	guardrail       *guardrail.Guardrail
+	feedback        *feedback.Loop
+	approvalHandler ApprovalHandler
+}
+
+// SetApprovalHandler sets the per-request approval handler.
+func (a *Agent) SetApprovalHandler(h ApprovalHandler) {
+	a.approvalHandler = h
 }
 
 // New creates a new Agent with default tools and mechanisms.
@@ -106,6 +113,23 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 
 			// 6b. Guardrail check
 			if reason := a.guardrail.Check(action.Tool, action.Params); reason != nil {
+				// Try HITL approval if handler is configured
+				if a.approvalHandler != nil {
+					cmd := ""
+					if c, ok := action.Params["command"].(string); ok {
+						cmd = c
+					}
+					resp, err := a.config.ApprovalHandler(ctx, ApprovalRequest{
+						Tool:    action.Tool,
+						Command: cmd,
+						Reason:  reason.Message,
+					})
+					if err == nil && resp.Allowed {
+						// User approved — proceed to execution
+						goto execute
+					}
+				}
+				// Blocked: inject rejection as tool result
 				messages = append(messages, llm.Message{
 					Role:       "tool",
 					Content:    fmt.Sprintf("BLOCKED: %s - %s", reason.Level, reason.Message),
@@ -113,6 +137,8 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
 				})
 				continue
 			}
+
+		execute:
 
 			// 6c. Inject workspace into params for shell/git tools
 			params := action.Params

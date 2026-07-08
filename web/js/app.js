@@ -149,6 +149,10 @@ class ConvallariaApp {
             this.updateStreamingMessage(buffer);
         });
 
+        this.sse.on('approval_required', (data) => {
+            this.showApprovalDialog(data);
+        });
+
         this.sse.on('error', (data) => {
             this.appendMessage('system', `Error: ${data.message}`);
         });
@@ -268,6 +272,34 @@ class ConvallariaApp {
         toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#bd9fff;color:#1c1b1f;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;pointer-events:none;transition:opacity 0.3s';
         document.body.appendChild(toast);
         setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 1500);
+    }
+
+    showApprovalDialog(data) {
+        const overlay = document.getElementById('approval-overlay');
+        const cmdEl = document.getElementById('approval-command');
+        const reasonEl = document.getElementById('approval-reason');
+        const denyBtn = document.getElementById('btn-deny');
+        const allowBtn = document.getElementById('btn-allow-once');
+
+        cmdEl.textContent = data.command || data.tool;
+        reasonEl.textContent = data.reason || 'This action requires your approval.';
+        overlay.removeAttribute('hidden');
+
+        const respond = async (allowed) => {
+            overlay.setAttribute('hidden', '');
+            try {
+                await fetch('/api/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: data.id, allowed }),
+                });
+            } catch (e) {
+                console.error('Approval error:', e);
+            }
+        };
+
+        denyBtn.onclick = () => respond(false);
+        allowBtn.onclick = () => respond(true);
     }
 }
 

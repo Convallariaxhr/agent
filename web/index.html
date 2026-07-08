@@ -111,6 +111,19 @@
         </aside>
     </div>
 
+    <!-- Approval Dialog -->
+    <div class="approval-overlay" id="approval-overlay" hidden>
+        <div class="approval-dialog">
+            <h3 class="approval-title">Dangerous Action Detected</h3>
+            <p class="approval-command" id="approval-command"></p>
+            <p class="approval-reason" id="approval-reason"></p>
+            <div class="approval-actions">
+                <button class="btn-approve btn-deny" id="btn-deny">Deny</button>
+                <button class="btn-approve btn-allow-once" id="btn-allow-once">Allow Once</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/sse.js"></script>
     <script src="js/app.js"></script>
 </body>
