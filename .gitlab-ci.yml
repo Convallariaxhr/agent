@@ -4,6 +4,7 @@
 stages:
   - test
   - build
+  - docker
 
 variables:
   GO_VERSION: "1.22"
@@ -34,5 +35,23 @@ build:
     paths:
       - convallaria
     expire_in: 30 days
+  needs:
+    - unit-test
+
+# Docker build and push (only on master)
+docker:
+  stage: docker
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
   needs:
     - unit-test
