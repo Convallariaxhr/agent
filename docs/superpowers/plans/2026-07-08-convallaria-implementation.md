@@ -37,7 +37,11 @@ Expected: `go.mod` created
 - [ ] **Step 2: Create directory structure and .gitignore**
 
 ```bash
+# Bash / Git Bash / WSL:
 mkdir -p cmd/convallaria internal/{agent,llm,parser,tools,guardrail,feedback,memory,context,recovery,session,config,server,credential} web test/integration
+
+# PowerShell (Windows):
+# New-Item -ItemType Directory -Force -Path cmd/convallaria, internal/agent, internal/llm, internal/parser, internal/tools, internal/guardrail, internal/feedback, internal/memory, internal/context, internal/recovery, internal/session, internal/config, internal/server, internal/credential, web, test/integration
 ```
 
 Create `.gitignore`:
@@ -601,8 +605,14 @@ func (c *Config) applyEnvOverrides() {
 - [ ] **Step 4: Add yaml dependency**
 
 ```bash
+# If proxy.golang.org is blocked (common in China):
+#   GOPROXY=https://goproxy.cn,direct go get gopkg.in/yaml.v3
+# Or use direct:
+#   GOPROXY=direct go get gopkg.in/yaml.v3
 go get gopkg.in/yaml.v3
 ```
+
+> **网络备用方案**：如果 `gopkg.in/yaml.v3` 无法下载，可以改用 `encoding/json` + JSON 格式配置文件。此时将 `convallaria.yaml` 改为 `convallaria.json`，`gopkg.in/yaml.v3` 替换为 `encoding/json`，YAML 结构体 tag 改为 JSON tag。
 
 - [ ] **Step 5: Run tests to verify they pass**
 
