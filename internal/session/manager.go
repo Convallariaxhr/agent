@@ -4,6 +4,7 @@ package session
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,7 +50,17 @@ func NewSQLiteManager(dbPath string) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{store: store}, nil
+	m := &Manager{store: store}
+	// Initialize nextID from existing sessions to avoid collisions after restart
+	sessions, _ := store.ListSessions()
+	for _, s := range sessions {
+		// Session IDs are "sess_<number>"
+		var n int
+		if _, err := fmt.Sscanf(s.ID, "sess_%d", &n); err == nil && n >= m.nextID {
+			m.nextID = n
+		}
+	}
+	return m, nil
 }
 
 func (m *Manager) Create(title, projectDir string) (*Session, error) {
@@ -58,10 +69,22 @@ func (m *Manager) Create(title, projectDir string) (*Session, error) {
 	id := fmt.Sprintf("sess_%d", m.nextID)
 	m.mu.Unlock()
 
-	if err := m.store.CreateSession(id, title, projectDir); err != nil {
+	// Retry with incremented ID on collision (e.g., after server restart)
+	for {
+		err := m.store.CreateSession(id, title, projectDir)
+		if err == nil {
+			return m.store.GetSession(id)
+		}
+		// If collision, try next ID
+		if strings.Contains(err.Error(), "UNIQUE constraint") {
+			m.mu.Lock()
+			m.nextID++
+			id = fmt.Sprintf("sess_%d", m.nextID)
+			m.mu.Unlock()
+			continue
+		}
 		return nil, err
 	}
-	return m.store.GetSession(id)
 }
 
 func (m *Manager) Get(id string) (*Session, error) {

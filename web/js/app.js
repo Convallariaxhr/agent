@@ -243,12 +243,17 @@ class ConvallariaApp {
     togglePanel(name) {
         const panel = name === 'file' ? this.el.filePanel : this.el.configPanel;
         const other  = name === 'file' ? this.el.configPanel : this.el.filePanel;
+        const btn    = name === 'file' ? this.el.btnToggleFiles : this.el.btnToggleConfig;
+        const otherBtn = name === 'file' ? this.el.btnToggleConfig : this.el.btnToggleFiles;
 
         if (panel.hasAttribute('hidden')) {
             panel.removeAttribute('hidden');
             other.setAttribute('hidden', '');
+            btn.classList.add('active');
+            otherBtn.classList.remove('active');
         } else {
             panel.setAttribute('hidden', '');
+            btn.classList.remove('active');
         }
     }
 
