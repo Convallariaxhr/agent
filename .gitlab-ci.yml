@@ -1,0 +1,38 @@
+# .gitlab-ci.yml — Convallaria CI/CD
+# Triggered on every push and merge request
+
+stages:
+  - test
+  - build
+
+variables:
+  GO_VERSION: "1.22"
+  GOPROXY: https://goproxy.cn,direct
+
+# Unit tests — required job
+unit-test:
+  stage: test
+  image: golang:${GO_VERSION}-alpine
+  script:
+    - go test ./... -v -count=1
+  cache:
+    paths:
+      - .go-cache/
+  artifacts:
+    when: always
+    paths:
+      - test-output.log
+    expire_in: 7 days
+
+# Build binary
+build:
+  stage: build
+  image: golang:${GO_VERSION}-alpine
+  script:
+    - go build -o convallaria ./cmd/convallaria/
+  artifacts:
+    paths:
+      - convallaria
+    expire_in: 30 days
+  needs:
+    - unit-test

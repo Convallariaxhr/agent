@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convallaria — Coding Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M12 4v2M12 18v2M4 12h2M18 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span class="logo-text">Convallaria</span>
+                </div>
+                <button class="btn-icon" id="btn-new-chat" title="New session">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <nav class="session-list" id="session-list">
+                <!-- rendered by JS -->
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn-icon" id="btn-toggle-files" title="File browser">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M3 5h3l1.5-2h6.5v10H3V5z" stroke="currentColor" stroke-width="1.2"/>
+                    </svg>
+                </button>
+                <button class="btn-icon" id="btn-toggle-config" title="Settings">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M9 4V2M9 16v-2M4 9H2M16 9h-2M5.5 5.5L4 4M14 14l-1.5-1.5M5.5 12.5L4 14M14 4l-1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Chat -->
+        <main class="main">
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="welcome">
+                        <div class="welcome-icon">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <circle cx="24" cy="24" r="8" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M24 8v4M24 36v4M8 24h4M36 24h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h2 class="welcome-title">What do you want to build?</h2>
+                        <p class="welcome-sub">Describe your task. I'll write, test, and fix the code.</p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="chat-input-wrapper" id="input-wrapper">
+                        <textarea
+                            id="chat-input"
+                            class="chat-input"
+                            placeholder="Describe your coding task..."
+                            rows="1"
+                            autofocus
+                        ></textarea>
+                        <button class="btn-send" id="btn-send" title="Send">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M2 9l14-7L9 16l-1-5-6-2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="input-hint">Enter to send, Shift+Enter for newline</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- File Browser Panel -->
+        <aside class="panel" id="file-panel" hidden>
+            <div class="panel-header">
+                <h3 class="panel-title">Files</h3>
+                <button class="btn-icon" id="btn-close-files">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="file-tree" id="file-tree">
+                <p class="empty-state">Connect to a workspace to browse files</p>
+            </div>
+        </aside>
+
+        <!-- Config Panel -->
+        <aside class="panel" id="config-panel" hidden>
+            <div class="panel-header">
+                <h3 class="panel-title">Settings</h3>
+                <button class="btn-icon" id="btn-close-config">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="config-content" id="config-content">
+                <p class="empty-state">Configuration coming soon</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Approval Dialog -->
+    <div class="approval-overlay" id="approval-overlay" hidden>
+        <div class="approval-dialog">
+            <h3 class="approval-title">Dangerous Action Detected</h3>
+            <p class="approval-command" id="approval-command"></p>
+            <p class="approval-reason" id="approval-reason"></p>
+            <div class="approval-actions">
+                <button class="btn-approve btn-deny" id="btn-deny">Deny</button>
+                <button class="btn-approve btn-allow-once" id="btn-allow-once">Allow Once</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/sse.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
