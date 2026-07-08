@@ -52,10 +52,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **反馈闭环**（重点）：编译检查 + 测试执行，确定性结果回灌给 LLM 驱动自我修正
 - **配置**：convallaria.yaml + 环境变量 + CLI 参数 + 项目规则文件
 
-## 开发纪律
+## 当前进度
 
-- 本项目是 AI4SE 期末项目（A · Coding Agent Harness），必须严格遵循课程要求
-- 强制使用 Superpowers 七步工作流：brainstorming → writing-plans → using-git-worktrees → subagent-driven-development → test-driven-development → requesting-code-review → finishing-a-development-branch
-- TDD 是硬性要求：先红、再绿、再重构，不可先写实现再补测试
-- 凭据绝不硬编码、不提交 Git
-- 核心机制必须是代码而非提示词，移除真实 LLM 后仍可用 mock 做确定性单测
+**Superpowers 七步工作流进度：**
+
+| 步骤 | 状态 | 产出 |
+|------|------|------|
+| 1. brainstorming | ✅ 完成 | 完整设计决策 |
+| 2. writing-plans | ✅ 完成 | `docs/superpowers/plans/2026-07-08-convallaria-implementation.md` |
+| 冷启动验证 | ✅ 完成 | 两轮验证，修复 13 个问题 |
+| 3. using-git-worktrees | ✅ 完成 | worktree `phase-1-scaffold` 已创建 |
+| 4. subagent-driven-development | 🔜 下一步 | 按 PLAN Phase 1 开始实现 |
+| 5. test-driven-development | 🔜 | |
+| 6. requesting-code-review | 🔜 | |
+| 7. finishing-a-development-branch | 🔜 | |
+
+**下一步**：使用 `subagent-driven-development` 按 PLAN.md 的 Phase 1 开始实现，从 Task 1.1（Go module 初始化）开始。
+
+## 关键文件
+
+- `SPEC.md` — 完整设计文档（11 章 + 附录）
+- `docs/superpowers/plans/2026-07-08-convallaria-implementation.md` — 13 个 Phase、30+ 个 Task 的实现计划
+- `.gitignore` — 已配置，忽略 `.superpowers/`、`.env`、二进制文件
+
+## 仓库信息
+
+- GitHub：`https://github.com/Convallariaxhr/agent.git`（公开仓库）
+- 本地路径：`D:\agent`
+- 当前 worktree：`D:\agent\.claude\worktrees\phase-1-scaffold`（分支 `worktree-phase-1-scaffold`）
+- 推送需要代理（`127.0.0.1:7890`）
+
+## 冷启动验证发现的关键修复
+
+以下问题已在 SPEC 和 PLAN 中修复，实现时注意：
+1. **Windows 兼容**：shell_runner 用 `cmd /c`（Windows）或 `sh -c`（Unix）；searcher 用 Go 原生实现而非系统 grep
+2. **MaskKey bug**：`key[:3] + "****" + key[len(key)-4:]`，不要多加 `-`
+3. **MemoryStore ID**：用 `fmt.Sprintf("mem_%d", id)` 而非 `rune('0'+id)`
+4. **反馈闭环**：每个 turn 结束后只跑一次，不是每个文件写完都跑
+5. **MockProvider goroutine**：所有 `ch <-` 都要包裹 `select { case <-ctx.Done(): }`
+6. **目录创建**：PowerShell 不支持 bash brace expansion，需用 `New-Item` 逐条创建
+7. **GOPROXY**：国内可能需 `GOPROXY=https://goproxy.cn,direct`
+
+## 关键设计决策
+
+- 语言：Go 1.22+
+- 重点维度：反馈闭环（Build + Vet + Test 三层校验器）
+- 前端：Material Design 3 + Open Design
+- 通信：SSE（Server-Sent Events）
+- 分发：Go 单文件二进制
+- 记忆：规则文件 + 向量检索（SQLite）
+- 护栏：三层（危险命令 + 文件范围 + Git 危险操作）+ HITL 审批
+- 多模型：Provider 接口支持 DeepSeek/OpenAI/Anthropic/Mock
+- 新增模块：上下文窗口管理、错误恢复、流式工具输出、会话管理
