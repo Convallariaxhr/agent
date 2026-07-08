@@ -21,95 +21,76 @@ type Session struct {
 	UpdatedAt  time.Time
 }
 
-// Manager manages sessions and their messages in memory.
-// In production, this is backed by SQLite.
-type Manager struct {
-	mu       sync.RWMutex
-	sessions map[string]*Session
-	messages map[string][]llm.Message
-	nextID   int
+// Store defines the persistence interface for sessions.
+type Store interface {
+	CreateSession(id, title, projectDir string) error
+	GetSession(id string) (*Session, error)
+	ListSessions() ([]*Session, error)
+	DeleteSession(id string) error
+	AddMessage(sessionID string, msg llm.Message) error
+	GetMessages(sessionID string) ([]llm.Message, error)
 }
 
+// Manager manages sessions and their messages.
+type Manager struct {
+	store  Store
+	nextID int
+	mu     sync.Mutex
+}
+
+// NewManager creates a Manager with an in-memory store.
 func NewManager() *Manager {
-	return &Manager{
-		sessions: make(map[string]*Session),
-		messages: make(map[string][]llm.Message),
+	return &Manager{store: newMemoryStore()}
+}
+
+// NewSQLiteManager creates a Manager backed by SQLite.
+func NewSQLiteManager(dbPath string) (*Manager, error) {
+	store, err := NewSQLiteStore(dbPath)
+	if err != nil {
+		return nil, err
 	}
+	return &Manager{store: store}, nil
 }
 
 func (m *Manager) Create(title, projectDir string) (*Session, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	m.nextID++
-	sess := &Session{
-		ID:         fmt.Sprintf("sess_%d", m.nextID),
-		Title:      title,
-		ProjectDir: projectDir,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+	id := fmt.Sprintf("sess_%d", m.nextID)
+	m.mu.Unlock()
+
+	if err := m.store.CreateSession(id, title, projectDir); err != nil {
+		return nil, err
 	}
-	m.sessions[sess.ID] = sess
-	m.messages[sess.ID] = make([]llm.Message, 0)
-	return sess, nil
+	return m.store.GetSession(id)
 }
 
 func (m *Manager) Get(id string) (*Session, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	sess, ok := m.sessions[id]
-	if !ok {
-		return nil, ErrSessionNotFound
-	}
-	return sess, nil
+	return m.store.GetSession(id)
 }
 
 func (m *Manager) List() []*Session {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	sessions := make([]*Session, 0, len(m.sessions))
-	for _, s := range m.sessions {
-		sessions = append(sessions, s)
+	sessions, _ := m.store.ListSessions()
+	if sessions == nil {
+		sessions = []*Session{}
 	}
 	return sessions
 }
 
 func (m *Manager) Delete(id string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, ok := m.sessions[id]; !ok {
-		return ErrSessionNotFound
-	}
-	delete(m.sessions, id)
-	delete(m.messages, id)
-	return nil
+	return m.store.DeleteSession(id)
 }
 
 func (m *Manager) AddMessage(sessionID string, msg llm.Message) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, ok := m.sessions[sessionID]; !ok {
-		return ErrSessionNotFound
-	}
-	m.messages[sessionID] = append(m.messages[sessionID], msg)
-	m.sessions[sessionID].UpdatedAt = time.Now()
-	return nil
+	return m.store.AddMessage(sessionID, msg)
 }
 
 func (m *Manager) GetMessages(sessionID string) ([]llm.Message, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	if _, ok := m.sessions[sessionID]; !ok {
-		return nil, ErrSessionNotFound
-	}
-	msgs := make([]llm.Message, len(m.messages[sessionID]))
-	copy(msgs, m.messages[sessionID])
-	return msgs, nil
+	return m.store.GetMessages(sessionID)
 }
 
 // Export returns the session's messages as a formatted string.
 func (m *Manager) Export(sessionID string) (string, error) {
-	msgs, err := m.GetMessages(sessionID)
+	msgs, err := m.store.GetMessages(sessionID)
 	if err != nil {
 		return "", err
 	}
@@ -118,4 +99,83 @@ func (m *Manager) Export(sessionID string) (string, error) {
 		result += fmt.Sprintf("## %s\n\n%s\n\n", msg.Role, msg.Content)
 	}
 	return result, nil
+}
+
+// memoryStore is the in-memory implementation of Store.
+type memoryStore struct {
+	mu       sync.RWMutex
+	sessions map[string]*Session
+	messages map[string][]llm.Message
+}
+
+func newMemoryStore() *memoryStore {
+	return &memoryStore{
+		sessions: make(map[string]*Session),
+		messages: make(map[string][]llm.Message),
+	}
+}
+
+func (s *memoryStore) CreateSession(id, title, projectDir string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	s.sessions[id] = &Session{
+		ID: id, Title: title, ProjectDir: projectDir,
+		CreatedAt: now, UpdatedAt: now,
+	}
+	s.messages[id] = make([]llm.Message, 0)
+	return nil
+}
+
+func (s *memoryStore) GetSession(id string) (*Session, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	sess, ok := s.sessions[id]
+	if !ok {
+		return nil, ErrSessionNotFound
+	}
+	return sess, nil
+}
+
+func (s *memoryStore) ListSessions() ([]*Session, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	sessions := make([]*Session, 0, len(s.sessions))
+	for _, sess := range s.sessions {
+		sessions = append(sessions, sess)
+	}
+	return sessions, nil
+}
+
+func (s *memoryStore) DeleteSession(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.sessions[id]; !ok {
+		return ErrSessionNotFound
+	}
+	delete(s.sessions, id)
+	delete(s.messages, id)
+	return nil
+}
+
+func (s *memoryStore) AddMessage(sessionID string, msg llm.Message) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.sessions[sessionID]; !ok {
+		return ErrSessionNotFound
+	}
+	s.messages[sessionID] = append(s.messages[sessionID], msg)
+	s.sessions[sessionID].UpdatedAt = time.Now()
+	return nil
+}
+
+func (s *memoryStore) GetMessages(sessionID string) ([]llm.Message, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if _, ok := s.sessions[sessionID]; !ok {
+		return nil, ErrSessionNotFound
+	}
+	msgs := make([]llm.Message, len(s.messages[sessionID]))
+	copy(msgs, s.messages[sessionID])
+	return msgs, nil
 }

@@ -61,8 +61,11 @@ func main() {
 		Workspace: cfg.Agent.Workspace,
 	})
 
-	// Create session manager
-	sessMgr := session.NewManager()
+	// Create session manager (SQLite-backed for persistence)
+	sessMgr, err := session.NewSQLiteManager("convallaria.db")
+	if err != nil {
+		log.Fatalf("Failed to create session manager: %v", err)
+	}
 
 	// Start server
 	srv := server.New(server.Config{
