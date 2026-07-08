@@ -20,3 +20,8 @@ dist/
 
 # Superpowers
 .superpowers/
+
+# Database
+*.db
+*.db-shm
+*.db-wal

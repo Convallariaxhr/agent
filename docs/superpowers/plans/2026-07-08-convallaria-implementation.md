@@ -87,7 +87,7 @@ go build ./cmd/convallaria/
 ```
 Expected: Build succeeds, no errors
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: initialize Go module and project structure"
@@ -356,7 +356,7 @@ go test ./internal/llm/ -v
 ```
 Expected: All 4 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add LLM Provider interface and Mock implementation"
@@ -798,7 +798,7 @@ go test ./internal/credential/ -v
 ```
 Expected: All 6 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add credential management with in-memory store"
@@ -959,7 +959,7 @@ go test ./internal/parser/ -v
 ```
 Expected: All 4 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add action parser for LLM response parsing"
@@ -1371,7 +1371,7 @@ go test ./internal/tools/ -v
 ```
 Expected: All 3 registry tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add tool registry and 6 tool implementations"
@@ -1631,7 +1631,7 @@ go test ./internal/guardrail/ -v
 ```
 Expected: All 6 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add guardrail with three-layer safety checks"
@@ -1981,7 +1981,7 @@ go test ./internal/feedback/ -v
 ```
 Expected: All 5 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add feedback loop with Build/Vet/Test validators"
@@ -2343,7 +2343,7 @@ go test ./internal/agent/ -v
 ```
 Expected: All 5 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add agent main loop with mock-LLM integration tests"
@@ -2533,7 +2533,7 @@ go test ./internal/context/ -v
 ```
 Expected: All 3 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add context window manager with token estimation and compression"
@@ -2690,7 +2690,7 @@ go test ./internal/recovery/ -v
 ```
 Expected: All 2 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add error recovery with retry, correction, and degradation"
@@ -2943,7 +2943,7 @@ go test ./internal/memory/ -v
 ```
 Expected: All 4 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add memory system with rules loader and keyword search store"
@@ -3193,7 +3193,7 @@ go test ./internal/session/ -v
 ```
 Expected: All 5 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add session manager with create, list, delete, and export"
@@ -3662,7 +3662,7 @@ go test ./internal/server/ -v
 ```
 Expected: All 3 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add HTTP/SSE server with chat and session endpoints"
@@ -4128,7 +4128,7 @@ const app = new ConvallariaApp();
 ls -la web/index.html web/css/style.css web/js/app.js web/js/sse.js
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** ✅
 
 ```bash
 git add -A && git commit -m "feat: add Material Design 3 Web UI shell"
