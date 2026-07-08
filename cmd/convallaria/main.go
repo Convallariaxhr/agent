@@ -40,13 +40,19 @@ func main() {
 		fmt.Println("Warning: No API key found. Run 'convallaria init' to configure.")
 	}
 
-	// Create LLM provider (currently only mock is supported without real API)
-	// In production: deepseek.New(apiKey), openai.New(apiKey), etc.
-	provider := llm.NewMockProvider()
-	// Pre-populate with demo responses for testing
-	provider.AddResponse(llm.MockTextResponse("Hello! I'm Convallaria, your coding agent. I can help you write, modify, and test code. What would you like to build today?"))
-	provider.AddResponse(llm.MockTextResponse("Sure! Let me write that for you. I'll create a simple Go program with a main function and proper error handling."))
-	provider.AddResponse(llm.MockTextResponse("The code looks good. I've added comments and followed Go best practices. Want me to write tests for it as well?"))
+	// Create LLM provider
+	var provider llm.Provider
+	if apiKey != "" {
+		fmt.Printf("Using DeepSeek provider (model: %s)\n", cfg.LLM.Model)
+		provider = llm.NewDeepSeek(apiKey, cfg.LLM.Model)
+	} else {
+		fmt.Println("No API key found — using mock provider for demo")
+		provider = llm.NewMockProvider()
+		// Pre-populate with demo responses
+		provider.(*llm.MockProvider).AddResponse(llm.MockTextResponse("Hello! I'm Convallaria, your coding agent. I can help you write, modify, and test code. What would you like to build today?"))
+		provider.(*llm.MockProvider).AddResponse(llm.MockTextResponse("Sure! Let me write that for you. I'll create a simple Go program with a main function and proper error handling."))
+		provider.(*llm.MockProvider).AddResponse(llm.MockTextResponse("The code looks good. I've added comments and followed Go best practices. Want me to write tests for it as well?"))
+	}
 
 	// Create agent
 	ag := agent.New(agent.Config{
