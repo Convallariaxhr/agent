@@ -43,8 +43,17 @@ func main() {
 	// Create LLM provider
 	var provider llm.Provider
 	if apiKey != "" {
-		fmt.Printf("Using DeepSeek provider (model: %s)\n", cfg.LLM.Model)
-		provider = llm.NewDeepSeek(apiKey, cfg.LLM.Model)
+		switch cfg.LLM.Provider {
+		case "openai":
+			fmt.Printf("Using OpenAI provider (model: %s)\n", cfg.LLM.Model)
+			provider = llm.NewOpenAI(apiKey, cfg.LLM.Model)
+		case "anthropic":
+			fmt.Printf("Using Anthropic provider (model: %s)\n", cfg.LLM.Model)
+			provider = llm.NewAnthropic(apiKey, cfg.LLM.Model)
+		default:
+			fmt.Printf("Using DeepSeek provider (model: %s)\n", cfg.LLM.Model)
+			provider = llm.NewDeepSeek(apiKey, cfg.LLM.Model)
+		}
 	} else {
 		fmt.Println("No API key found — using mock provider for demo")
 		provider = llm.NewMockProvider()
