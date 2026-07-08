@@ -203,7 +203,7 @@ llm:
 ### 4.3 可用性
 
 - 首次运行引导：初始化凭据 → 创建默认配置 → 打开 Web UI
-- 错误信息用中文描述，包含建议的修复操作
+- 错误信息用英文描述（技术工具标准），包含建议的修复操作
 - 所有操作提供明确的进度反馈
 
 ### 4.4 可观测性
@@ -379,11 +379,19 @@ memory:
 - **安装**：下载二进制 → 放到 PATH → 运行 `convallaria init`
 - **Key 配置**：首次运行 `convallaria init` 引导录入，或手动设置环境变量 `CONVALLARIA_API_KEY`
 
-### 7.3 已知限制
+### 7.3 环境前提
+
+- **Go 1.22+**：构建和运行必需，`go version` 确认
+- **Git**：`git` 命令可用（Windows 下 Git Bash 或 WSL）
+- **操作系统**：Windows (cmd/powershell)、macOS (sh)、Linux (sh) 均支持
+- 工具实现需要做 OS 判断：shell 命令 Windows 用 `cmd /c`，Unix 用 `sh -c`；搜索用 Go 原生实现而非系统 grep
+
+### 7.4 已知限制
 
 - 文件操作沙箱基于路径匹配，非真正的 OS 级沙箱
 - 嵌入模型如选本地，需额外下载模型文件
 - 仅支持通过 OpenAI 兼容 API 的供应商（Anthropic 需适配层）
+- Windows 下 shell 使用 `cmd /c`，与 Unix `sh -c` 行为有差异；搜索使用 Go 原生实现而非系统 grep
 
 ---
 

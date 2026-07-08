@@ -18,17 +18,49 @@
 - Create: `go.mod`
 - Create: `cmd/convallaria/main.go` (stub)
 
+- [ ] **Step 0: Verify environment prerequisites**
+
+```bash
+go version  # Expected: go version go1.22.x or later
+git --version
+```
+If Go is not installed, download from https://go.dev/dl/ and install.
+
 - [ ] **Step 1: Initialize Go module**
 
 ```bash
-cd D:\agent && go mod init github.com/Convallariaxhr/convallaria
+cd /path/to/your/project  # Replace with your actual project directory
+go mod init github.com/Convallariaxhr/convallaria
 ```
 Expected: `go.mod` created
 
-- [ ] **Step 2: Create directory structure**
+- [ ] **Step 2: Create directory structure and .gitignore**
 
 ```bash
 mkdir -p cmd/convallaria internal/{agent,llm,parser,tools,guardrail,feedback,memory,context,recovery,session,config,server,credential} web test/integration
+```
+
+Create `.gitignore`:
+```
+# Binaries
+*.exe
+convallaria
+convallaria.exe
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Dependencies
+vendor/
+
+# Build artifacts
+dist/
 ```
 
 - [ ] **Step 3: Create stub main.go**
@@ -169,16 +201,31 @@ func (m *MockProvider) Chat(ctx context.Context, messages []Message) (<-chan Str
             }
         } else if m.callCount < len(m.Responses) {
             resp := m.Responses[m.callCount]
-            // Simulate token-by-token streaming
             for _, r := range resp.Text {
-                ch <- StreamEvent{Type: "token", Token: string(r)}
+                select {
+                case <-ctx.Done():
+                    return
+                case ch <- StreamEvent{Type: "token", Token: string(r)}:
+                }
             }
             for _, tc := range resp.ToolCalls {
-                ch <- StreamEvent{Type: "tool_call", ToolCall: &tc}
+                select {
+                case <-ctx.Done():
+                    return
+                case ch <- StreamEvent{Type: "tool_call", ToolCall: &tc}:
+                }
             }
-            ch <- StreamEvent{Type: "done"}
+            select {
+            case <-ctx.Done():
+                return
+            case ch <- StreamEvent{Type: "done"}:
+            }
         } else {
-            ch <- StreamEvent{Type: "done"}
+            select {
+            case <-ctx.Done():
+                return
+            case ch <- StreamEvent{Type: "done"}:
+            }
         }
         m.callCount++
     }()
@@ -729,9 +776,8 @@ func MaskKey(key string) string {
     if len(key) <= 8 {
         return "***"
     }
-    prefix := key[:3]
-    masked := prefix + "-****" + key[len(key)-4:]
-    return masked
+    // key[:3] includes the dash (e.g. "sk-"), so don't add another dash
+    return key[:3] + "****" + key[len(key)-4:]
 }
 ```
 
@@ -1111,6 +1157,7 @@ package tools
 import (
     "context"
     "os/exec"
+    "runtime"
     "time"
 )
 
@@ -1131,7 +1178,13 @@ func (s *ShellRunner) Execute(ctx context.Context, params map[string]any) (*Resu
     ctx, cancel := context.WithTimeout(ctx, timeout)
     defer cancel()
 
-    cmd := exec.CommandContext(ctx, "sh", "-c", command)
+    var cmd *exec.Cmd
+    if runtime.GOOS == "windows" {
+        cmd = exec.CommandContext(ctx, "cmd", "/c", command)
+    } else {
+        cmd = exec.CommandContext(ctx, "sh", "-c", command)
+    }
+
     output, err := cmd.CombinedOutput()
     if err != nil {
         return &Result{
@@ -1150,7 +1203,9 @@ package tools
 
 import (
     "context"
-    "os/exec"
+    "os"
+    "path/filepath"
+    "strconv"
     "strings"
 )
 
@@ -1158,26 +1213,63 @@ type Searcher struct{}
 
 func (s *Searcher) Name() string { return "search" }
 func (s *Searcher) Description() string {
-    return "Search for a pattern in files using grep"
+    return "Search for a pattern in files using recursive directory scan"
 }
 
 func (s *Searcher) Execute(ctx context.Context, params map[string]any) (*Result, error) {
     pattern, _ := params["pattern"].(string)
-    path, _ := params["path"].(string)
-    if path == "" {
-        path = "."
+    searchPath, _ := params["path"].(string)
+    if searchPath == "" {
+        searchPath = "."
     }
 
-    cmd := exec.CommandContext(ctx, "grep", "-rn", pattern, path)
-    output, err := cmd.CombinedOutput()
-    if err != nil {
-        if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-            // grep returns 1 for "no matches"
-            return &Result{Output: "No matches found", Success: true}, nil
+    var matches []string
+    err := filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return nil // skip unreadable files
         }
+        if info.IsDir() {
+            // Skip hidden directories and .git
+            name := info.Name()
+            if strings.HasPrefix(name, ".") && name != "." {
+                return filepath.SkipDir
+            }
+            return nil
+        }
+        // Skip binary files by extension
+        ext := filepath.Ext(path)
+        if isBinaryExt(ext) {
+            return nil
+        }
+        data, err := os.ReadFile(path)
+        if err != nil {
+            return nil
+        }
+        lines := strings.Split(string(data), "\n")
+        for i, line := range lines {
+            if strings.Contains(line, pattern) {
+                matches = append(matches, path+":"+strconv.Itoa(i+1)+":"+line)
+            }
+        }
+        return nil
+    })
+
+    if err != nil {
         return &Result{Success: false, Error: err.Error()}, nil
     }
-    return &Result{Output: strings.TrimSpace(string(output)), Success: true}, nil
+    if len(matches) == 0 {
+        return &Result{Output: "No matches found", Success: true}, nil
+    }
+    return &Result{Output: strings.Join(matches, "\n"), Success: true}, nil
+}
+
+func isBinaryExt(ext string) bool {
+    binary := map[string]bool{
+        ".exe": true, ".dll": true, ".so": true, ".o": true,
+        ".png": true, ".jpg": true, ".gif": true, ".zip": true,
+        ".tar": true, ".gz": true, ".pdf": true,
+    }
+    return binary[ext]
 }
 ```
 
@@ -2156,6 +2248,7 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
         })
 
         // 6. Execute each action
+        codeModified := false
         for _, action := range actions {
             // 6a. Guardrail check
             if reason := a.guardrail.Check(action.Tool, action.Params); reason != nil {
@@ -2191,18 +2284,23 @@ func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
                 ToolCallID: action.ToolCallID,
             })
 
-            // 6d. Feedback loop: check if code change needs validation
+            // Track if code files were modified
             if action.Tool == "file_write" || action.Tool == "shell_run" {
-                fbResult := a.feedback.Run(ctx, a.config.Workspace)
-                if fbResult.Status == "failed" {
-                    fb := &feedback.Feedback{
-                        Stage:   fbResult.Stage,
-                        Status:  "failed",
-                        Errors:  fbResult.Errors,
-                        Summary: fmt.Sprintf("%s failed: %d error(s)", fbResult.Stage, len(fbResult.Errors)),
-                    }
-                    a.messages = append(a.messages, fb.ToMessage())
+                codeModified = true
+            }
+        }
+
+        // 6d. Feedback loop: run once per turn after all actions
+        if codeModified {
+            fbResult := a.feedback.Run(ctx, a.config.Workspace)
+            if fbResult.Status == "failed" {
+                fb := &feedback.Feedback{
+                    Stage:   fbResult.Stage,
+                    Status:  "failed",
+                    Errors:  fbResult.Errors,
+                    Summary: fmt.Sprintf("%s failed: %d error(s)", fbResult.Stage, len(fbResult.Errors)),
                 }
+                a.messages = append(a.messages, fb.ToMessage())
             }
         }
     }
@@ -2727,6 +2825,7 @@ func LoadRules(projectDir string) (string, error) {
 package memory
 
 import (
+    "fmt"
     "strings"
     "sync"
 )
@@ -2757,7 +2856,7 @@ func (s *Store) Insert(entry MemoryEntry) error {
     s.mu.Lock()
     defer s.mu.Unlock()
     s.nextID++
-    entry.ID = string(rune('0' + s.nextID))
+    entry.ID = fmt.Sprintf("mem_%d", s.nextID)
     s.entries = append(s.entries, entry)
     return nil
 }
