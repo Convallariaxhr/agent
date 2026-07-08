@@ -39,6 +39,10 @@ func main() {
 	// Create LLM provider (currently only mock is supported without real API)
 	// In production: deepseek.New(apiKey), openai.New(apiKey), etc.
 	provider := llm.NewMockProvider()
+	// Pre-populate with demo responses for testing
+	provider.AddResponse(llm.MockTextResponse("Hello! I'm Convallaria, your coding agent. I can help you write, modify, and test code. What would you like to build today?"))
+	provider.AddResponse(llm.MockTextResponse("Sure! Let me write that for you. I'll create a simple Go program with a main function and proper error handling."))
+	provider.AddResponse(llm.MockTextResponse("The code looks good. I've added comments and followed Go best practices. Want me to write tests for it as well?"))
 
 	// Create agent
 	ag := agent.New(agent.Config{

@@ -261,9 +261,32 @@ class ConvallariaApp {
         div.textContent = str;
         return div.innerHTML;
     }
+
+    showToast(msg) {
+        const toast = document.createElement('div');
+        toast.textContent = msg;
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#bd9fff;color:#1c1b1f;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;pointer-events:none;transition:opacity 0.3s';
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 1500);
+    }
 }
 
-// Boot
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new ConvallariaApp();
-});
+// Boot — robust initialization that works regardless of script load timing
+(function boot() {
+    try {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                window.app = new ConvallariaApp();
+                console.log('Convallaria initialized (DOMContentLoaded)');
+            });
+        } else {
+            window.app = new ConvallariaApp();
+            console.log('Convallaria initialized (immediate)');
+        }
+    } catch (e) {
+        console.error('Convallaria boot error:', e);
+        document.body.insertAdjacentHTML('beforeend',
+            '<div style="position:fixed;top:0;left:0;right:0;background:#f2b8b5;color:#1c1b1f;padding:12px;z-index:9999;font-family:sans-serif;">' +
+            '<strong>Init Error:</strong> ' + e.message + '</div>');
+    }
+})();
