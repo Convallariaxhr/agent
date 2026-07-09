@@ -278,22 +278,73 @@ class ConvallariaApp {
     }
 
     async loadFiles() {
+        this.currentFileDir = this.currentFileDir || '.';
         try {
-            const resp = await fetch('/api/files?dir=.');
+            const resp = await fetch(`/api/files?dir=${encodeURIComponent(this.currentFileDir)}`);
             const entries = await resp.json();
             const tree = document.getElementById('file-tree');
+            const breadcrumb = document.getElementById('file-breadcrumb');
             if (!entries || !entries.length) {
-                tree.innerHTML = '<p class="empty-state">No files found</p>';
-                return;
+                tree.innerHTML = '<p class="empty-state">Empty directory</p>';
+            } else {
+                tree.innerHTML = entries.map(e =>
+                    `<div class="file-entry ${e.isDir ? 'is-dir' : 'is-file'}"
+                          data-name="${this.escapeHtml(e.name)}"
+                          data-isdir="${e.isDir}"
+                          onclick="app.navigateFile('${this.escapeHtml(e.name)}', ${e.isDir})">
+                        ${e.isDir ? '📁' : '📄'} ${this.escapeHtml(e.name)}
+                    </div>`
+                ).join('');
             }
-            tree.innerHTML = entries.map(e =>
-                `<div class="file-entry ${e.isDir ? 'is-dir' : 'is-file'}">
-                    ${e.isDir ? '📁' : '📄'} ${this.escapeHtml(e.name)}
-                </div>`
-            ).join('');
+            breadcrumb.textContent = this.currentFileDir === '.' ? '/' : this.currentFileDir;
         } catch (e) {
             console.error('Failed to load files:', e);
         }
+    }
+
+    navigateFile(name, isDir) {
+        if (isDir) {
+            this.currentFileDir = this.currentFileDir === '.'
+                ? name
+                : this.currentFileDir + '/' + name;
+            this.loadFiles();
+        } else {
+            const filePath = this.currentFileDir === '.'
+                ? name
+                : this.currentFileDir + '/' + name;
+            this.viewFile(filePath, name);
+        }
+    }
+
+    goUpDir() {
+        if (!this.currentFileDir || this.currentFileDir === '.') return;
+        const parts = this.currentFileDir.split('/');
+        parts.pop();
+        this.currentFileDir = parts.length ? parts.join('/') : '.';
+        this.loadFiles();
+    }
+
+    async viewFile(path, name) {
+        try {
+            const resp = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+            if (!resp.ok) {
+                this.showToast('Cannot read file');
+                return;
+            }
+            const content = await resp.text();
+            const viewer = document.getElementById('file-viewer');
+            const viewerTitle = document.getElementById('file-viewer-title');
+            const viewerContent = document.getElementById('file-viewer-content');
+            viewerTitle.textContent = name;
+            viewerContent.textContent = content;
+            viewer.removeAttribute('hidden');
+        } catch (e) {
+            console.error('Failed to read file:', e);
+        }
+    }
+
+    closeFileViewer() {
+        document.getElementById('file-viewer').setAttribute('hidden', '');
     }
 
     loadConfig() {

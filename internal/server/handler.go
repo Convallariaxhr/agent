@@ -258,6 +258,19 @@ func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// File content endpoint
+	if r.URL.Query().Has("path") {
+		path := r.URL.Query().Get("path")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write(data)
+		return
+	}
+
 	dir := r.URL.Query().Get("dir")
 	if dir == "" {
 		dir = "."
