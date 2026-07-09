@@ -68,6 +68,10 @@ func New(config Config) *Agent {
 // history contains previous messages in the conversation (may be nil for first turn).
 // It is safe for concurrent use: all state is local to the call.
 func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message) (string, error) {
+	// 0. Build tool definitions and register with provider
+	toolDefs := a.buildToolDefs()
+	a.config.Provider.SetTools(toolDefs)
+
 	// 1. Build context: system prompt + history + current user input
 	messages := make([]llm.Message, 0, len(history)+2)
 	messages = append(messages, llm.Message{Role: "system", Content: a.systemPrompt()})
@@ -142,15 +146,13 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 
 		execute:
 
-			// 6c. Inject workspace into params for shell/git tools
+			// 6c. Inject workspace into params for all path-based tools
 			params := action.Params
-			if action.Tool == "shell_run" || action.Tool == "git" || action.Tool == "test_run" {
-				if params == nil {
-					params = make(map[string]any)
-				}
-				if _, ok := params["workspace"]; !ok {
-					params["workspace"] = a.config.Workspace
-				}
+			if params == nil {
+				params = make(map[string]any)
+			}
+			if _, ok := params["workspace"]; !ok {
+				params["workspace"] = a.config.Workspace
 			}
 
 			// 6d. Execute tool
@@ -197,6 +199,19 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 	}
 
 	return "", ErrMaxTurnsExceeded
+}
+
+func (a *Agent) buildToolDefs() []llm.ToolDef {
+	tools := a.tools.List()
+	defs := make([]llm.ToolDef, len(tools))
+	for i, t := range tools {
+		defs[i] = llm.ToolDef{
+			Name:        t.Name(),
+			Description: t.Description(),
+			Parameters:  t.Schema(),
+		}
+	}
+	return defs
 }
 
 func (a *Agent) systemPrompt() string {

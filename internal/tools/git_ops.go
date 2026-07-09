@@ -11,6 +11,16 @@ type GitOps struct{}
 
 func (g *GitOps) Name() string        { return "git" }
 func (g *GitOps) Description() string { return "Execute git operations (status, commit, branch, diff)" }
+func (g *GitOps) Schema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"operation": map[string]any{"type": "string", "description": "Git operation: status, commit, diff, branch"},
+			"message":   map[string]any{"type": "string", "description": "Commit message (required for commit)"},
+		},
+		"required": []string{"operation"},
+	}
+}
 
 func (g *GitOps) Execute(ctx context.Context, params map[string]any) (*Result, error) {
 	operation, _ := params["operation"].(string)

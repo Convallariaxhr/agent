@@ -20,6 +20,7 @@ type DeepSeekProvider struct {
 	model   string
 	baseURL string
 	client  *http.Client
+	tools   []ToolDef
 }
 
 // NewDeepSeek creates a new DeepSeek provider.
@@ -35,11 +36,17 @@ func NewDeepSeek(apiKey, model string) *DeepSeekProvider {
 	}
 }
 
+// SetTools configures the tools available to the LLM.
+func (d *DeepSeekProvider) SetTools(tools []ToolDef) {
+	d.tools = tools
+}
+
 // chatRequest is the OpenAI-compatible request body.
 type chatRequest struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
 	Stream   bool      `json:"stream"`
+	Tools    []ToolDef `json:"tools,omitempty"`
 }
 
 // chatResponse is the OpenAI-compatible sync response.
@@ -71,6 +78,7 @@ func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*R
 		Model:    d.model,
 		Messages: messages,
 		Stream:   false,
+		Tools:    d.tools,
 	}
 
 	reqBytes, err := json.Marshal(body)
@@ -119,6 +127,7 @@ func (d *DeepSeekProvider) Chat(ctx context.Context, messages []Message) (<-chan
 		Model:    d.model,
 		Messages: messages,
 		Stream:   true,
+		Tools:    d.tools,
 	}
 
 	reqBytes, err := json.Marshal(body)

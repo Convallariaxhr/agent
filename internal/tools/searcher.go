@@ -15,12 +15,26 @@ func (s *Searcher) Name() string { return "search" }
 func (s *Searcher) Description() string {
 	return "Search for a pattern in files using recursive directory scan"
 }
+func (s *Searcher) Schema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"pattern": map[string]any{"type": "string", "description": "The text pattern to search for"},
+			"path":    map[string]any{"type": "string", "description": "Directory to search in (defaults to workspace root)"},
+		},
+		"required": []string{"pattern"},
+	}
+}
 
 func (s *Searcher) Execute(ctx context.Context, params map[string]any) (*Result, error) {
 	pattern, _ := params["pattern"].(string)
 	searchPath, _ := params["path"].(string)
 	if searchPath == "" {
 		searchPath = "."
+	}
+	// Resolve relative to workspace if provided
+	if ws, ok := params["workspace"].(string); ok && ws != "" && !filepath.IsAbs(searchPath) {
+		searchPath = filepath.Join(ws, searchPath)
 	}
 
 	var matches []string

@@ -60,6 +60,7 @@ type AnthropicProvider struct {
 	apiKey  string
 	model   string
 	client  *http.Client
+	tools   []ToolDef
 }
 
 // NewAnthropic creates a new Anthropic provider.
@@ -72,6 +73,11 @@ func NewAnthropic(apiKey, model string) *AnthropicProvider {
 		model:  model,
 		client: &http.Client{},
 	}
+}
+
+// SetTools configures the tools available to the LLM.
+func (p *AnthropicProvider) SetTools(tools []ToolDef) {
+	p.tools = tools
 }
 
 // ChatSync sends a synchronous chat request to Anthropic.

@@ -14,6 +14,15 @@ type ShellRunner struct {
 
 func (s *ShellRunner) Name() string        { return "shell_run" }
 func (s *ShellRunner) Description() string { return "Execute a shell command" }
+func (s *ShellRunner) Schema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"command": map[string]any{"type": "string", "description": "The shell command to execute"},
+		},
+		"required": []string{"command"},
+	}
+}
 
 func (s *ShellRunner) Execute(ctx context.Context, params map[string]any) (*Result, error) {
 	command, _ := params["command"].(string)

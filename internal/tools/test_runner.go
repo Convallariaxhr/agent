@@ -10,6 +10,15 @@ type TestRunner struct{}
 
 func (t *TestRunner) Name() string        { return "test_run" }
 func (t *TestRunner) Description() string { return "Run tests in the project" }
+func (t *TestRunner) Schema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"path": map[string]any{"type": "string", "description": "Test package path (defaults to ./...)"},
+		},
+		"required": []string{},
+	}
+}
 
 func (t *TestRunner) Execute(ctx context.Context, params map[string]any) (*Result, error) {
 	testPath, _ := params["path"].(string)

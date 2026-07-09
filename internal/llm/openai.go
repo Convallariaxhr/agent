@@ -21,6 +21,7 @@ type OpenAIProvider struct {
 	model   string
 	baseURL string
 	client  *http.Client
+	tools   []ToolDef
 }
 
 // NewOpenAI creates a new OpenAI provider.
@@ -36,12 +37,18 @@ func NewOpenAI(apiKey, model string) *OpenAIProvider {
 	}
 }
 
+// SetTools configures the tools available to the LLM.
+func (p *OpenAIProvider) SetTools(tools []ToolDef) {
+	p.tools = tools
+}
+
 // ChatSync sends a synchronous chat request and returns the full response.
 func (p *OpenAIProvider) ChatSync(ctx context.Context, messages []Message) (*Response, error) {
 	body := chatRequest{
 		Model:    p.model,
 		Messages: messages,
 		Stream:   false,
+		Tools:    p.tools,
 	}
 
 	reqBytes, err := json.Marshal(body)

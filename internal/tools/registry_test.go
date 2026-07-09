@@ -48,3 +48,11 @@ func (e *EchoTool) Execute(ctx context.Context, params map[string]any) (*Result,
 
 func (e *EchoTool) Name() string        { return "echo" }
 func (e *EchoTool) Description() string { return "Echoes the message parameter" }
+func (e *EchoTool) Schema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"message": map[string]any{"type": "string", "description": "Message to echo"},
+		},
+	}
+}

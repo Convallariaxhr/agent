@@ -20,6 +20,7 @@ type Result struct {
 type Tool interface {
 	Name() string
 	Description() string
+	Schema() map[string]any // JSON Schema for function calling
 	Execute(ctx context.Context, params map[string]any) (*Result, error)
 }
 

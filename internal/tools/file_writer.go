@@ -11,10 +11,24 @@ type FileWriter struct{}
 
 func (f *FileWriter) Name() string        { return "file_write" }
 func (f *FileWriter) Description() string { return "Write content to a file, creating it if necessary" }
+func (f *FileWriter) Schema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"path":    map[string]any{"type": "string", "description": "Path to the file to write"},
+			"content": map[string]any{"type": "string", "description": "Content to write to the file"},
+		},
+		"required": []string{"path", "content"},
+	}
+}
 
 func (f *FileWriter) Execute(ctx context.Context, params map[string]any) (*Result, error) {
 	path, _ := params["path"].(string)
 	content, _ := params["content"].(string)
+	// Resolve relative to workspace if provided
+	if ws, ok := params["workspace"].(string); ok && ws != "" && !filepath.IsAbs(path) {
+		path = filepath.Join(ws, path)
+	}
 
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {

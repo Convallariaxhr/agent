@@ -41,10 +41,19 @@ type Response struct {
 	StopReason string     `json:"stop_reason"` // "stop", "tool_calls", "max_tokens"
 }
 
+// ToolDef describes a tool available to the LLM.
+type ToolDef struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Parameters  any    `json:"parameters"` // JSON Schema for the tool's arguments
+}
+
 // Provider defines the interface for LLM interactions.
 type Provider interface {
 	// Chat sends messages and returns a channel of streaming events.
 	Chat(ctx context.Context, messages []Message) (<-chan StreamEvent, error)
 	// ChatSync sends messages and returns a complete response (no streaming).
 	ChatSync(ctx context.Context, messages []Message) (*Response, error)
+	// SetTools configures the tools available to the LLM.
+	SetTools(tools []ToolDef)
 }

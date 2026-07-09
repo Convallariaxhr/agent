@@ -25,6 +25,9 @@ func NewMockProvider() *MockProvider {
 	return &MockProvider{}
 }
 
+// SetTools is a no-op for MockProvider (responses are pre-configured).
+func (m *MockProvider) SetTools(tools []ToolDef) {}
+
 // AddResponse appends a sync response to the queue.
 func (m *MockProvider) AddResponse(r *Response) {
 	m.mu.Lock()
