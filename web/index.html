@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
     <div class="app-container">
@@ -15,9 +15,23 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M12 4v2M12 18v2M4 12h2M18 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <svg class="logo-icon" width="24" height="24" viewBox="0 0 100 100" fill="none">
+                        <defs>
+                            <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#bd9fff"/>
+                                <stop offset="100%" stop-color="#a78bfa"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="50" cy="50" r="48" fill="url(#logo-grad)" opacity="0.15"/>
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="url(#logo-grad)" stroke-width="2" opacity="0.7"/>
+                        <path d="M50 40 Q40 36 32 44 Q24 52 32 60 Q40 66 50 64 Q60 66 68 60 Q76 52 68 44 Q60 36 50 40Z" fill="white" opacity="0.95"/>
+                        <circle cx="44" cy="50" r="3" fill="#2a2830"/>
+                        <circle cx="45" cy="49" r="1.2" fill="white"/>
+                        <circle cx="56" cy="50" r="3" fill="#2a2830"/>
+                        <circle cx="57" cy="49" r="1.2" fill="white"/>
+                        <ellipse cx="42" cy="56" rx="3" ry="1.5" fill="#bd9fff" opacity="0.5"/>
+                        <ellipse cx="58" cy="56" rx="3" ry="1.5" fill="#bd9fff" opacity="0.5"/>
+                        <circle cx="50" cy="38" r="3.5" fill="#bd9fff" opacity="0.6"/>
                     </svg>
                     <span class="logo-text">Convallaria</span>
                 </div>
@@ -51,9 +65,23 @@
                 <div class="chat-messages" id="chat-messages">
                     <div class="welcome">
                         <div class="welcome-icon">
-                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                <circle cx="24" cy="24" r="8" stroke="currentColor" stroke-width="1.5"/>
-                                <path d="M24 8v4M24 36v4M8 24h4M36 24h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <svg width="64" height="64" viewBox="0 0 100 100" fill="none">
+                                <defs>
+                                    <linearGradient id="welc-grad" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stop-color="#bd9fff"/>
+                                        <stop offset="100%" stop-color="#a78bfa"/>
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="50" cy="50" r="48" fill="url(#welc-grad)" opacity="0.15"/>
+                                <circle cx="50" cy="50" r="46" fill="none" stroke="url(#welc-grad)" stroke-width="1.5" opacity="0.6"/>
+                                <path d="M50 40 Q40 36 32 44 Q24 52 32 60 Q40 66 50 64 Q60 66 68 60 Q76 52 68 44 Q60 36 50 40Z" fill="white" opacity="0.95"/>
+                                <circle cx="44" cy="50" r="3" fill="#2a2830"/>
+                                <circle cx="45" cy="49" r="1.2" fill="white"/>
+                                <circle cx="56" cy="50" r="3" fill="#2a2830"/>
+                                <circle cx="57" cy="49" r="1.2" fill="white"/>
+                                <ellipse cx="42" cy="56" rx="3" ry="1.5" fill="#bd9fff" opacity="0.5"/>
+                                <ellipse cx="58" cy="56" rx="3" ry="1.5" fill="#bd9fff" opacity="0.5"/>
+                                <circle cx="50" cy="38" r="3.5" fill="#bd9fff" opacity="0.6"/>
                             </svg>
                         </div>
                         <h2 class="welcome-title">What do you want to build?</h2>

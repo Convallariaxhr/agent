@@ -259,6 +259,14 @@ html, body {
 
 .message.assistant {
     margin-right: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.msg-avatar-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .message.assistant .message-bubble {
