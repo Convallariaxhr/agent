@@ -151,8 +151,13 @@ guardrails:
 ├── .gitlab-ci.yml                   # GitLab CI/CD
 ├── Dockerfile                       # 多阶段 Docker 构建
 ├── Makefile                         # 构建/测试/跨平台编译
-├── SPEC.md                          # 完整设计文档
-├── docs/superpowers/plans/          # 实现计划
+├── SPEC.md                          # 完整设计文档（11 章）
+├── docs/
+│   ├── superpowers/plans/           # 13 Phase 实现计划
+│   ├── AGENT_LOG.md                 # 实现过程日志
+│   ├── DEMO.md                      # 核心机制演示
+│   ├── REFLECTION.md                # Superpowers 方法论反思
+│   └── SPEC_PROCESS.md              # 规约与设计过程
 └── convallaria.db                   # SQLite 数据库（运行后自动生成）
 ```
 
