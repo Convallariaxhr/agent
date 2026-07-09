@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const anthropicBaseURL = "https://api.anthropic.com/v1"
@@ -20,6 +21,13 @@ type anthropicMessage struct {
 	Content string `json:"content"`
 }
 
+// anthropicToolDef is the Anthropic tool definition format.
+type anthropicToolDef struct {
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	InputSchema map[string]any `json:"input_schema"`
+}
+
 // anthropicRequest is the Anthropic API request body.
 type anthropicRequest struct {
 	Model     string             `json:"model"`
@@ -27,6 +35,7 @@ type anthropicRequest struct {
 	Messages  []anthropicMessage `json:"messages"`
 	System    string             `json:"system,omitempty"`
 	Stream    bool               `json:"stream"`
+	Tools     []anthropicToolDef `json:"tools,omitempty"`
 }
 
 // anthropicContent is a content block in the response.
@@ -71,7 +80,7 @@ func NewAnthropic(apiKey, model string) *AnthropicProvider {
 	return &AnthropicProvider{
 		apiKey: apiKey,
 		model:  model,
-		client: &http.Client{},
+		client: &http.Client{Timeout: 120 * time.Second},
 	}
 }
 
@@ -82,10 +91,21 @@ func (p *AnthropicProvider) SetTools(tools []ToolDef) {
 
 // ChatSync sends a synchronous chat request to Anthropic.
 func (p *AnthropicProvider) ChatSync(ctx context.Context, messages []Message) (*Response, error) {
+	// Convert tools to Anthropic format
+	antTools := make([]anthropicToolDef, len(p.tools))
+	for i, t := range p.tools {
+		antTools[i] = anthropicToolDef{
+			Name:        t.Name,
+			Description: t.Description,
+			InputSchema: t.Parameters.(map[string]any),
+		}
+	}
+
 	req := anthropicRequest{
 		Model:     p.model,
 		MaxTokens: 4096,
 		Stream:    false,
+		Tools:     antTools,
 	}
 
 	// Convert messages: extract system prompt, convert rest

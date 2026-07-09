@@ -13,7 +13,6 @@ import (
 
 	"github.com/Convallariaxhr/convallaria/internal/agent"
 	"github.com/Convallariaxhr/convallaria/internal/config"
-	"github.com/Convallariaxhr/convallaria/internal/credential"
 	"github.com/Convallariaxhr/convallaria/internal/llm"
 	"github.com/Convallariaxhr/convallaria/internal/server"
 	"github.com/Convallariaxhr/convallaria/internal/session"
@@ -30,12 +29,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Load credentials
-	store := credential.NewMemoryStore()
-	apiKey, err := store.Get(cfg.LLM.Provider)
-	if err != nil {
-		apiKey = os.Getenv(cfg.LLM.APIKeyEnv)
-	}
+	apiKey := cfg.LLM.APIKey
 	if apiKey == "" {
 		fmt.Println("Warning: No API key found. Run 'convallaria init' to configure.")
 	}

@@ -30,7 +30,7 @@ func TestGuardrail_BlocksFileOutsideWorkspace(t *testing.T) {
 		Workspace:         "/tmp/test",
 	})
 
-	reason := g.Check("file_write", map[string]any{"path": "/etc/passwd", "content": "x"})
+	reason := g.Check("file_write", map[string]any{"path": "../../etc/passwd", "content": "x"})
 	if reason == nil {
 		t.Fatal("expected block for writing outside workspace")
 	}

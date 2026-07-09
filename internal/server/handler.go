@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -95,6 +96,14 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	if len(req.Message) > 32000 {
+		http.Error(w, "Message too long (max 32000 chars)", http.StatusBadRequest)
+		return
+	}
+	if req.Message == "" {
+		http.Error(w, "Message is empty", http.StatusBadRequest)
+		return
+	}
 
 	sessID := req.SessionID
 	if sessID == "" {
@@ -146,9 +155,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, r := range resp {
-		sse.WriteEvent("token", jsonEncode(map[string]string{"token": string(r)}))
-	}
+	// Send entire response as a single token event (not per-character)
+	sse.WriteEvent("token", jsonEncode(map[string]string{"token": resp}))
 	sse.WriteEvent("done", `{}`)
 
 	s.sessions.AddMessage(sessID, llm.Message{Role: "assistant", Content: resp})
@@ -282,6 +290,12 @@ func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
 	// File content endpoint
 	if r.URL.Query().Has("path") {
 		path := r.URL.Query().Get("path")
+		// Restrict to workspace
+		absPath, err := filepath.Abs(path)
+		if err != nil || !strings.HasPrefix(filepath.ToSlash(absPath), filepath.ToSlash(s.agent.Workspace())) {
+			http.Error(w, "Forbidden: path outside workspace", http.StatusForbidden)
+			return
+		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)

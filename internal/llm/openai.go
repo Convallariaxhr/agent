@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const defaultOpenAIBaseURL = "https://api.openai.com/v1"
@@ -33,7 +34,7 @@ func NewOpenAI(apiKey, model string) *OpenAIProvider {
 		apiKey:  apiKey,
 		model:   model,
 		baseURL: defaultOpenAIBaseURL,
-		client:  &http.Client{},
+		client:  &http.Client{Timeout: 120 * time.Second},
 	}
 }
 

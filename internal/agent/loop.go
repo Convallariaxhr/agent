@@ -39,6 +39,11 @@ func (a *Agent) SetApprovalHandler(h ApprovalHandler) {
 	a.approvalHandler = h
 }
 
+// Workspace returns the agent's configured workspace directory.
+func (a *Agent) Workspace() string {
+	return a.config.Workspace
+}
+
 // New creates a new Agent with default tools and mechanisms.
 func New(config Config) *Agent {
 	reg := tools.NewRegistry()

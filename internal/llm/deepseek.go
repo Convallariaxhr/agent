@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const defaultDeepSeekBaseURL = "https://api.deepseek.com/v1"
@@ -32,7 +33,7 @@ func NewDeepSeek(apiKey, model string) *DeepSeekProvider {
 		apiKey:  apiKey,
 		model:   model,
 		baseURL: defaultDeepSeekBaseURL,
-		client:  &http.Client{},
+		client:  &http.Client{Timeout: 120 * time.Second},
 	}
 }
 

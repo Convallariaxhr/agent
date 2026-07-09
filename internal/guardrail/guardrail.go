@@ -80,16 +80,19 @@ func (g *Guardrail) Check(toolName string, params map[string]any) *BlockReason {
 	// Layer 2: File scope
 	if g.config.FileScope {
 		if path, ok := params["path"].(string); ok {
-			if toolName == "file_write" || toolName == "file_read" {
-				absPath, err := filepath.Abs(path)
-				if err == nil {
-					absWorkspace, _ := filepath.Abs(g.config.Workspace)
-					rel, err := filepath.Rel(absWorkspace, absPath)
-					if err != nil || strings.HasPrefix(rel, "..") {
-						return &BlockReason{
-							Level:   "file_scope",
-							Message: "File outside workspace: " + path,
-						}
+			if toolName == "file_write" || toolName == "file_read" || toolName == "search" {
+				// Resolve path: relative paths are resolved against workspace
+				if !filepath.IsAbs(path) {
+					path = filepath.Join(g.config.Workspace, path)
+				}
+				absPath, _ := filepath.Abs(path)
+				absWorkspace, _ := filepath.Abs(g.config.Workspace)
+				// Normalize to slash for reliable prefix check
+				rel, err := filepath.Rel(absWorkspace, absPath)
+				if err != nil || strings.HasPrefix(rel, "..") {
+					return &BlockReason{
+						Level:   "file_scope",
+						Message: "File outside workspace: " + path,
 					}
 				}
 			}

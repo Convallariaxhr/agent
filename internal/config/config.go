@@ -23,6 +23,7 @@ type LLMConfig struct {
 	MaxTokens   int     `yaml:"max_tokens"`
 	Temperature float64 `yaml:"temperature"`
 	APIKeyEnv   string  `yaml:"api_key_env"`
+	APIKey      string  `yaml:"-"` // populated from env var at load time
 }
 
 type AgentConfig struct {
@@ -134,6 +135,9 @@ func (c *Config) applyEnvOverrides() {
 	}
 	if v := os.Getenv("CONVALLARIA_API_KEY"); v != "" {
 		c.LLM.APIKeyEnv = "CONVALLARIA_API_KEY"
-		_ = v
+		c.LLM.APIKey = v
+	} else {
+		// Fall back to provider-specific env var
+		c.LLM.APIKey = os.Getenv(c.LLM.APIKeyEnv)
 	}
 }

@@ -79,9 +79,14 @@ func (s *Searcher) Execute(ctx context.Context, params map[string]any) (*Result,
 
 func isBinaryExt(ext string) bool {
 	binary := map[string]bool{
-		".exe": true, ".dll": true, ".so": true, ".o": true,
-		".png": true, ".jpg": true, ".gif": true, ".zip": true,
-		".tar": true, ".gz": true, ".pdf": true,
+		".exe": true, ".dll": true, ".so": true, ".o": true, ".a": true,
+		".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".ico": true, ".bmp": true,
+		".zip": true, ".tar": true, ".gz": true, ".bz2": true, ".7z": true, ".rar": true,
+		".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
+		".pyc": true, ".class": true, ".jar": true, ".war": true,
+		".mp3": true, ".mp4": true, ".avi": true, ".mov": true, ".wav": true,
+		".ttf": true, ".otf": true, ".woff": true, ".woff2": true,
+		".db": true, ".sqlite": true, ".sqlite3": true,
 	}
 	return binary[ext]
 }
