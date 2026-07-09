@@ -19,7 +19,7 @@ func TestAgent_TextResponse_ReturnsFinalReply(t *testing.T) {
 		Provider: mock,
 	})
 
-	resp, err := agent.Run(context.Background(), "Write a hello world program")
+	resp, err := agent.Run(context.Background(), "Write a hello world program", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestAgent_ToolCall_ExecutesAndReturnsResult(t *testing.T) {
 		Workspace: dir,
 	})
 
-	resp, err := agent.Run(context.Background(), "Create a file called hello.txt")
+	resp, err := agent.Run(context.Background(), "Create a file called hello.txt", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestAgent_GuardrailBlocksDangerousAction(t *testing.T) {
 		Workspace: "/tmp/test",
 	})
 
-	resp, err := agent.Run(context.Background(), "Delete everything")
+	resp, err := agent.Run(context.Background(), "Delete everything", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestAgent_FeedbackLoop_DetectsBuildError(t *testing.T) {
 		Workspace: dir,
 	})
 
-	resp, err := agent.Run(context.Background(), "Write a hello world program")
+	resp, err := agent.Run(context.Background(), "Write a hello world program", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestAgent_MaxTurnsExceeded(t *testing.T) {
 		Workspace: "/tmp/test",
 	})
 
-	_, err := agent.Run(context.Background(), "Write code")
+	_, err := agent.Run(context.Background(), "Write code", nil)
 	if err != ErrMaxTurnsExceeded {
 		t.Errorf("expected ErrMaxTurnsExceeded, got %v", err)
 	}

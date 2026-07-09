@@ -108,6 +108,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	s.sessions.AddMessage(sessID, llm.Message{Role: "user", Content: req.Message})
 
+	// Load conversation history for context
+	history, _ := s.sessions.GetMessages(sessID)
+	// Exclude the user message we just added (it will be passed separately)
+	if len(history) > 0 {
+		history = history[:len(history)-1]
+	}
+
 	sse := NewSSEWriter(w)
 	sse.WriteEvent("session", jsonEncode(map[string]string{"id": sessID}))
 
@@ -133,7 +140,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-	resp, err := s.agent.Run(r.Context(), req.Message)
+	resp, err := s.agent.Run(r.Context(), req.Message, history)
 	if err != nil {
 		sse.WriteEvent("error", jsonEncode(map[string]string{"message": err.Error()}))
 		return

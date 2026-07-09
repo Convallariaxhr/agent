@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Convallariaxhr/convallaria/internal/feedback"
 	"github.com/Convallariaxhr/convallaria/internal/guardrail"
@@ -64,13 +65,14 @@ func New(config Config) *Agent {
 }
 
 // Run executes the agent main loop for a single user input.
+// history contains previous messages in the conversation (may be nil for first turn).
 // It is safe for concurrent use: all state is local to the call.
-func (a *Agent) Run(ctx context.Context, userInput string) (string, error) {
-	// 1. Build initial context (local to this call — no shared state)
-	messages := []llm.Message{
-		{Role: "system", Content: a.systemPrompt()},
-		{Role: "user", Content: userInput},
-	}
+func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message) (string, error) {
+	// 1. Build context: system prompt + history + current user input
+	messages := make([]llm.Message, 0, len(history)+2)
+	messages = append(messages, llm.Message{Role: "system", Content: a.systemPrompt()})
+	messages = append(messages, history...)
+	messages = append(messages, llm.Message{Role: "user", Content: userInput})
 
 	for turn := 0; turn < a.config.MaxTurns; turn++ {
 		// 2. Call LLM
@@ -201,15 +203,23 @@ func (a *Agent) systemPrompt() string {
 	if a.config.SystemPrompt != "" {
 		return a.config.SystemPrompt
 	}
-	return "You are Convallaria, a coding agent. You help users write, modify, and test code.\n" +
-		"You have access to the following tools:\n" +
-		"- file_read(path): Read a file\n" +
-		"- file_write(path, content): Write a file\n" +
-		"- shell_run(command): Run a shell command\n" +
-		"- search(pattern, path): Search for a pattern in files\n" +
-		"- test_run(path): Run tests\n" +
-		"- git(operation, ...): Git operations\n" +
-		"\n" +
-		"Always think step by step. When you write code, you will receive automated feedback\n" +
-		"from the build system, linter, and test runner. Use this feedback to fix issues."
+	toolList := a.tools.List()
+	toolDescs := make([]string, len(toolList))
+	for i, t := range toolList {
+		toolDescs[i] = fmt.Sprintf("- %s: %s", t.Name(), t.Description())
+	}
+	return fmt.Sprintf(`You are Convallaria, a coding agent. You help users write, modify, and test code.
+
+Current workspace: %s
+
+You have access to the following tools:
+%s
+
+Important rules:
+- Always think step by step before acting.
+- You CAN read and write files in the workspace and its subdirectories.
+- You CAN run shell commands to explore directories, build, and test code.
+- When you write code, you will receive automated feedback from the build system and test runner. Use this feedback to fix issues.
+- Be persistent: if a command fails, try to understand why and fix it.
+- Remember context from earlier in the conversation — the user may refer to things they mentioned before.`, a.config.Workspace, strings.Join(toolDescs, "\n"))
 }
