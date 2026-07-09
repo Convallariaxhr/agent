@@ -79,8 +79,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - GitHub：`https://github.com/Convallariaxhr/agent.git`（公开仓库）
 - 本地路径：`D:\agent`
-- 当前 worktree：`D:\agent\.claude\worktrees\phase-1-scaffold`（分支 `worktree-phase-1-scaffold`）
-- 推送需要代理（`127.0.0.1:7890`）
+- 当前分支：`master`
 
 ## 冷启动验证发现的关键修复
 

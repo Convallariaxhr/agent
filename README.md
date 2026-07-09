@@ -9,7 +9,7 @@
 ### 环境要求
 
 - Go 1.22+
-- (可选) DeepSeek API Key
+- (可选) DeepSeek / OpenAI / Anthropic API Key
 
 ### 安装运行
 
@@ -22,18 +22,29 @@ cd agent
 go run ./cmd/convallaria/
 
 # 使用 DeepSeek
-set DEEPSEEK_API_KEY=sk-your-key   # Windows
-export DEEPSEEK_API_KEY=sk-your-key  # macOS/Linux
-go run ./cmd/convallaria/
+# Windows
+set DEEPSEEK_API_KEY=sk-your-key && go run ./cmd/convallaria/
+# macOS / Linux
+export DEEPSEEK_API_KEY=sk-your-key && go run ./cmd/convallaria/
 ```
 
 打开浏览器访问 `http://localhost:8080`
 
+### Docker 部署
+
+```bash
+docker build -t convallaria .
+docker run -p 8080:8080 -e DEEPSEEK_API_KEY=sk-your-key convallaria
+```
+
 ### 构建二进制
 
 ```bash
+# 当前平台
 go build -o convallaria.exe ./cmd/convallaria/
-./convallaria.exe -port 8080
+
+# 全平台
+make build-all
 ```
 
 ## 系统架构
@@ -41,24 +52,24 @@ go build -o convallaria.exe ./cmd/convallaria/
 ```
 浏览器 (Material Design 3 Web UI)
   ├── 对话面板（SSE 流式推送）
-  ├── 文件浏览
-  ├── 会话列表
+  ├── 文件浏览（交互式，支持导航和预览）
+  ├── 会话列表（右键重命名）
   └── 配置面板
         ↓ SSE         ↑ HTTP
-┌──────────────────────────────────────┐
-│              Go 后端 :8080            │
-│  ┌────────┐ ┌────────┐ ┌──────────┐ │
-│  │HTTP/SSE│ │Agent   │ │治理护栏   │ │
-│  │Handler │ │主循环   │ │HITL 审批  │ │
-│  └────────┘ └────────┘ └──────────┘ │
-│  ┌────────┐ ┌────────┐ ┌──────────┐ │
-│  │工具执行│ │反馈闭环│ │记忆系统   │ │
-│  │6 tools │ │Build   │ │规则+SQLite│ │
-│  └────────┘ │Vet+Test│ └──────────┘ │
-│             └────────┘               │
-└──────────────────────────────────────┘
-        ↓ HTTP
-   🤖 DeepSeek API
+┌──────────────────────────────────────────┐
+│              Go 后端 :8080                │
+│  ┌────────┐ ┌────────┐ ┌──────────┐     │
+│  │HTTP/SSE│ │Agent   │ │治理护栏   │     │
+│  │Handler │ │主循环   │ │HITL 审批  │     │
+│  └────────┘ └────────┘ └──────────┘     │
+│  ┌────────┐ ┌────────┐ ┌──────────┐     │
+│  │工具执行│ │反馈闭环│ │记忆系统   │     │
+│  │6 tools │ │Build   │ │规则+SQLite│     │
+│  └────────┘ │Vet+Test│ └──────────┘     │
+│             └────────┘                   │
+└──────────────────────────────────────────┘
+        ↓ HTTP (OpenAI 兼容 API)
+   🤖 DeepSeek / OpenAI / Anthropic
 ```
 
 ## 六个维度
@@ -72,12 +83,29 @@ go build -o convallaria.exe ./cmd/convallaria/
 | 反馈闭环 | Build + Vet + Test 三层校验，结果回灌 LLM 驱动自我修正 |
 | 配置 | convallaria.yaml + 环境变量 + CLI 参数 |
 
+## 功能特性
+
+### Web UI
+- 铃兰主题 Material Design 3 界面
+- SSE 流式对话，实时显示 LLM 输出
+- 多会话管理，右键重命名
+- 交互式文件浏览器：目录导航、文件内容预览
+- 配置面板查看当前设置
+- 危险操作 HITL 审批弹窗
+
+### 后端
+- 多 LLM Provider 支持：DeepSeek / OpenAI / Anthropic / Mock
+- 会话 SQLite 持久化，重启不丢失
+- 反馈闭环：Build → Vet → Test 三层自动校验
+- 上下文窗口管理 + 错误恢复
+- 凭据脱敏，环境变量注入
+
 ## 配置
 
 ```yaml
 # convallaria.yaml
 llm:
-  provider: deepseek
+  provider: deepseek          # deepseek / openai / anthropic
   model: deepseek-chat
   max_tokens: 4096
   api_key_env: DEEPSEEK_API_KEY
@@ -98,35 +126,39 @@ guardrails:
 
 ```
 .
-├── cmd/convallaria/main.go      # CLI 入口
+├── cmd/convallaria/main.go          # CLI 入口
 ├── internal/
-│   ├── agent/                   # Agent 主循环 + 审批
-│   ├── config/                  # 配置系统
-│   ├── context/                 # 上下文窗口管理
-│   ├── credential/              # 凭据管理
-│   ├── feedback/                # 反馈闭环 (Build/Vet/Test)
-│   ├── guardrail/               # 三层护栏
-│   ├── llm/                     # LLM Provider 接口 + DeepSeek + Mock
-│   ├── memory/                  # 记忆系统 (规则 + SQLite)
-│   ├── parser/                  # LLM 响应解析
-│   ├── recovery/                # 错误恢复
-│   ├── server/                  # HTTP/SSE 服务器
-│   ├── session/                 # 会话管理 (SQLite)
-│   └── tools/                   # 6 个工具实现
-├── web/                         # Material Design 3 Web UI
+│   ├── agent/                       # Agent 主循环 + HITL 审批
+│   ├── config/                      # 配置系统 (YAML + env)
+│   ├── context/                     # 上下文窗口管理
+│   ├── credential/                  # 凭据管理 (脱敏)
+│   ├── feedback/                    # 反馈闭环 (Build/Vet/Test)
+│   ├── guardrail/                   # 三层安全护栏
+│   ├── llm/                         # LLM Provider (DeepSeek/OpenAI/Anthropic/Mock)
+│   ├── memory/                      # 记忆系统 (规则 + SQLite)
+│   ├── parser/                      # LLM 响应解析
+│   ├── recovery/                    # 错误恢复
+│   ├── server/                      # HTTP/SSE 服务器
+│   ├── session/                     # 会话管理 (SQLite 持久化)
+│   └── tools/                       # 6 个工具实现
+├── web/                             # Material Design 3 Web UI
 │   ├── index.html
 │   ├── css/style.css
 │   └── js/
 │       ├── app.js
 │       └── sse.js
-├── SPEC.md                      # 设计文档
-├── PLAN.md                      # 实现计划
-└── convallaria.db               # SQLite 数据库（运行后自动生成）
+├── .github/workflows/ci.yml         # GitHub Actions CI/CD
+├── .gitlab-ci.yml                   # GitLab CI/CD
+├── Dockerfile                       # 多阶段 Docker 构建
+├── Makefile                         # 构建/测试/跨平台编译
+├── SPEC.md                          # 完整设计文档
+├── docs/superpowers/plans/          # 实现计划
+└── convallaria.db                   # SQLite 数据库（运行后自动生成）
 ```
 
 ## 安全边界
 
-- **凭据**：API Key 通过环境变量 `DEEPSEEK_API_KEY` 传入，不存储在代码或配置文件中
+- **凭据**：API Key 通过环境变量传入，不存储在代码或配置文件中；日志输出自动脱敏
 - **护栏**：危险命令正则拦截、文件操作限制在工作区范围内、Git 危险操作拦截
 - **HITL**：拦截到危险操作时前端弹窗请求人工审批，支持"允许一次"和"拒绝"
 - **编码**：SSE 数据使用 `json.Marshal` 安全编码，防止 JSON 注入
@@ -142,12 +174,18 @@ guardrails:
 ## 测试
 
 ```bash
-# 运行所有测试
+# 运行所有测试（52 个，全部通过）
 go test ./...
 
 # 带详细输出
 go test ./... -v
 ```
+
+## CI/CD
+
+Push 到 master 分支自动触发：
+- GitHub Actions：单元测试 → 二进制构建 → Docker 镜像构建推送
+- GitLab CI：单元测试 → 二进制构建 → Docker 镜像构建推送
 
 ## License
 
