@@ -48,6 +48,21 @@ type ToolDef struct {
 	Parameters  any    `json:"parameters"` // JSON Schema for the tool's arguments
 }
 
+// openAITool is the OpenAI-compatible wrapper format for function calling.
+type openAITool struct {
+	Type     string  `json:"type"`
+	Function ToolDef `json:"function"`
+}
+
+// toOpenAITools converts ToolDefs to the OpenAI function-calling format.
+func toOpenAITools(tools []ToolDef) []openAITool {
+	result := make([]openAITool, len(tools))
+	for i, t := range tools {
+		result[i] = openAITool{Type: "function", Function: t}
+	}
+	return result
+}
+
 // Provider defines the interface for LLM interactions.
 type Provider interface {
 	// Chat sends messages and returns a channel of streaming events.

@@ -49,7 +49,7 @@ func (p *OpenAIProvider) ChatSync(ctx context.Context, messages []Message) (*Res
 		Model:    p.model,
 		Messages: messages,
 		Stream:   false,
-		Tools:    p.tools,
+		Tools:    toOpenAITools(p.tools),
 	}
 
 	reqBytes, err := json.Marshal(body)

@@ -44,10 +44,10 @@ func (d *DeepSeekProvider) SetTools(tools []ToolDef) {
 
 // chatRequest is the OpenAI-compatible request body.
 type chatRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
-	Stream   bool      `json:"stream"`
-	Tools    []ToolDef `json:"tools,omitempty"`
+	Model    string       `json:"model"`
+	Messages []Message    `json:"messages"`
+	Stream   bool         `json:"stream"`
+	Tools    []openAITool `json:"tools,omitempty"`
 }
 
 // chatResponse is the OpenAI-compatible sync response.
@@ -79,7 +79,7 @@ func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*R
 		Model:    d.model,
 		Messages: messages,
 		Stream:   false,
-		Tools:    d.tools,
+		Tools:    toOpenAITools(d.tools),
 	}
 
 	reqBytes, err := json.Marshal(body)
@@ -128,7 +128,7 @@ func (d *DeepSeekProvider) Chat(ctx context.Context, messages []Message) (<-chan
 		Model:    d.model,
 		Messages: messages,
 		Stream:   true,
-		Tools:    d.tools,
+		Tools:    toOpenAITools(d.tools),
 	}
 
 	reqBytes, err := json.Marshal(body)
