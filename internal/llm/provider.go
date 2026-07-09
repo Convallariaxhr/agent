@@ -17,6 +17,7 @@ type Message struct {
 // ToolCall represents a function call requested by the LLM.
 type ToolCall struct {
 	ID       string       `json:"id"`
+	Type     string       `json:"type"`
 	Function FunctionCall `json:"function"`
 }
 

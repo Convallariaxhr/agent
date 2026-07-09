@@ -142,7 +142,7 @@ func (m *MockProvider) CallCount() int {
 func MockToolCallResponse(id, name, args string) *Response {
 	return &Response{
 		ToolCalls: []ToolCall{
-			{ID: id, Function: FunctionCall{Name: name, Arguments: args}},
+			{ID: id, Type: "function", Function: FunctionCall{Name: name, Arguments: args}},
 		},
 		StopReason: "tool_calls",
 	}
