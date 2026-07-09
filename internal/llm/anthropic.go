@@ -230,6 +230,11 @@ func (p *AnthropicProvider) Chat(ctx context.Context, messages []Message) (<-cha
 		defer resp.Body.Close()
 
 		scanner := bufio.NewScanner(resp.Body)
+		var currentToolUse *struct {
+			ID   string
+			Name string
+			JSON string
+		}
 		for scanner.Scan() {
 			select {
 			case <-ctx.Done():
@@ -249,6 +254,14 @@ func (p *AnthropicProvider) Chat(ctx context.Context, messages []Message) (<-cha
 			}
 
 			switch ev.Type {
+			case "content_block_start":
+				if ev.ContentBlock != nil && ev.ContentBlock.Type == "tool_use" {
+					currentToolUse = &struct {
+						ID   string
+						Name string
+						JSON string
+					}{ID: ev.ContentBlock.ID, Name: ev.ContentBlock.Name}
+				}
 			case "content_block_delta":
 				if ev.Delta != nil && ev.Delta.Type == "text_delta" {
 					select {
@@ -256,6 +269,23 @@ func (p *AnthropicProvider) Chat(ctx context.Context, messages []Message) (<-cha
 						return
 					case ch <- StreamEvent{Type: "token", Token: ev.Delta.Text}:
 					}
+				} else if ev.Delta != nil && ev.Delta.Type == "input_json_delta" && currentToolUse != nil {
+					currentToolUse.JSON += ev.Delta.Text
+				}
+			case "message_delta":
+				if currentToolUse != nil && currentToolUse.JSON != "" {
+					select {
+					case <-ctx.Done():
+						return
+					case ch <- StreamEvent{Type: "tool_call", ToolCall: &ToolCall{
+						ID: currentToolUse.ID,
+						Function: FunctionCall{
+							Name:      currentToolUse.Name,
+							Arguments: currentToolUse.JSON,
+						},
+					}}:
+					}
+					currentToolUse = nil
 				}
 			case "message_stop":
 				select {

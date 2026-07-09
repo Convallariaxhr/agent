@@ -3,6 +3,7 @@ package session
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -31,6 +32,9 @@ func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 		return nil, err
 	}
 
+	// Run migration for existing databases
+	migrateMessagesTable(db)
+
 	return &SQLiteStore{db: db}, nil
 }
 
@@ -49,10 +53,16 @@ func createSessionTables(db *sql.DB) error {
 			role TEXT NOT NULL,
 			content TEXT NOT NULL DEFAULT '',
 			tool_call_id TEXT DEFAULT '',
+			tool_calls TEXT DEFAULT '',
 			FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
 		);
 	`)
 	return err
+}
+
+// migrateMessagesTable adds tool_calls column if it doesn't exist (for existing databases).
+func migrateMessagesTable(db *sql.DB) {
+	db.Exec(`ALTER TABLE messages ADD COLUMN tool_calls TEXT DEFAULT ''`)
 }
 
 func (s *SQLiteStore) Close() error {
@@ -123,9 +133,15 @@ func (s *SQLiteStore) RenameSession(id, title string) error {
 
 // AddMessage inserts a message for a session.
 func (s *SQLiteStore) AddMessage(sessionID string, msg llm.Message) error {
+	// Serialize ToolCalls to JSON
+	toolCallsJSON := ""
+	if len(msg.ToolCalls) > 0 {
+		data, _ := json.Marshal(msg.ToolCalls)
+		toolCallsJSON = string(data)
+	}
 	_, err := s.db.Exec(
-		`INSERT INTO messages (session_id, role, content, tool_call_id) VALUES (?, ?, ?, ?)`,
-		sessionID, msg.Role, msg.Content, msg.ToolCallID,
+		`INSERT INTO messages (session_id, role, content, tool_call_id, tool_calls) VALUES (?, ?, ?, ?, ?)`,
+		sessionID, msg.Role, msg.Content, msg.ToolCallID, toolCallsJSON,
 	)
 	if err != nil {
 		return err
@@ -139,7 +155,7 @@ func (s *SQLiteStore) AddMessage(sessionID string, msg llm.Message) error {
 // GetMessages retrieves all messages for a session.
 func (s *SQLiteStore) GetMessages(sessionID string) ([]llm.Message, error) {
 	rows, err := s.db.Query(
-		`SELECT role, content, tool_call_id FROM messages WHERE session_id = ? ORDER BY id ASC`,
+		`SELECT role, content, tool_call_id, tool_calls FROM messages WHERE session_id = ? ORDER BY id ASC`,
 		sessionID,
 	)
 	if err != nil {
@@ -150,8 +166,12 @@ func (s *SQLiteStore) GetMessages(sessionID string) ([]llm.Message, error) {
 	var msgs []llm.Message
 	for rows.Next() {
 		var msg llm.Message
-		if err := rows.Scan(&msg.Role, &msg.Content, &msg.ToolCallID); err != nil {
+		var toolCallsJSON string
+		if err := rows.Scan(&msg.Role, &msg.Content, &msg.ToolCallID, &toolCallsJSON); err != nil {
 			return nil, err
+		}
+		if toolCallsJSON != "" {
+			json.Unmarshal([]byte(toolCallsJSON), &msg.ToolCalls)
 		}
 		msgs = append(msgs, msg)
 	}

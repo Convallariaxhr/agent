@@ -28,8 +28,12 @@ func (v *BuildValidator) Validate(ctx context.Context, workspace string) *Feedba
 
 	// Parse Go build errors: file:line:col: message
 	errStr := string(output)
-	re := regexp.MustCompile(`(.+?):(\d+):(\d+):\s*(.+)`)
+	re := regexp.MustCompile(`^(.+?):(\d+):(\d+):\s*(.+)`)
 	for _, line := range strings.Split(errStr, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "# ") {
+			continue
+		}
 		matches := re.FindStringSubmatch(line)
 		if len(matches) == 5 {
 			lineNo, _ := strconv.Atoi(matches[2])
@@ -39,6 +43,11 @@ func (v *BuildValidator) Validate(ctx context.Context, workspace string) *Feedba
 				Line:    lineNo,
 				Column:  colNo,
 				Message: strings.TrimSpace(matches[4]),
+			})
+		} else {
+			// Non-standard format (e.g. import cycle, package-level errors)
+			fb.Errors = append(fb.Errors, FeedbackError{
+				Message: line,
 			})
 		}
 	}

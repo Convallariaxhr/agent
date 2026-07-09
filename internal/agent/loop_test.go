@@ -3,6 +3,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -128,7 +129,7 @@ func TestAgent_MaxTurnsExceeded(t *testing.T) {
 	mock := llm.NewMockProvider()
 	// Add many tool calls that will never converge
 	for i := 0; i < 10; i++ {
-		mock.AddResponse(llm.MockToolCallResponse("call_"+string(rune('a'+i)), "file_write",
+		mock.AddResponse(llm.MockToolCallResponse(fmt.Sprintf("call_%d", i), "file_write",
 			`{"path":"/tmp/test/x.go","content":"x"}`))
 	}
 

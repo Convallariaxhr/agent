@@ -290,9 +290,11 @@ func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
 	// File content endpoint
 	if r.URL.Query().Has("path") {
 		path := r.URL.Query().Get("path")
-		// Restrict to workspace
+		// Restrict to workspace: resolve path and check with filepath.Rel
 		absPath, err := filepath.Abs(path)
-		if err != nil || !strings.HasPrefix(filepath.ToSlash(absPath), filepath.ToSlash(s.agent.Workspace())) {
+		absWorkspace, _ := filepath.Abs(s.agent.Workspace())
+		rel, relErr := filepath.Rel(absWorkspace, absPath)
+		if err != nil || relErr != nil || strings.HasPrefix(rel, "..") {
 			http.Error(w, "Forbidden: path outside workspace", http.StatusForbidden)
 			return
 		}
