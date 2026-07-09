@@ -28,6 +28,7 @@ type Store interface {
 	GetSession(id string) (*Session, error)
 	ListSessions() ([]*Session, error)
 	DeleteSession(id string) error
+	RenameSession(id, title string) error
 	AddMessage(sessionID string, msg llm.Message) error
 	GetMessages(sessionID string) ([]llm.Message, error)
 }
@@ -111,6 +112,11 @@ func (m *Manager) GetMessages(sessionID string) ([]llm.Message, error) {
 	return m.store.GetMessages(sessionID)
 }
 
+// Rename updates the title of a session.
+func (m *Manager) Rename(id, title string) error {
+	return m.store.RenameSession(id, title)
+}
+
 // Export returns the session's messages as a formatted string.
 func (m *Manager) Export(sessionID string) (string, error) {
 	msgs, err := m.store.GetMessages(sessionID)
@@ -178,6 +184,18 @@ func (s *memoryStore) DeleteSession(id string) error {
 	}
 	delete(s.sessions, id)
 	delete(s.messages, id)
+	return nil
+}
+
+func (s *memoryStore) RenameSession(id, title string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sess, ok := s.sessions[id]
+	if !ok {
+		return ErrSessionNotFound
+	}
+	sess.Title = title
+	sess.UpdatedAt = time.Now()
 	return nil
 }
 

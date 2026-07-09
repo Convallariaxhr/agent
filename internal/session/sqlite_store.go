@@ -114,6 +114,13 @@ func (s *SQLiteStore) DeleteSession(id string) error {
 	return err
 }
 
+// RenameSession updates the title of a session.
+func (s *SQLiteStore) RenameSession(id, title string) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := s.db.Exec(`UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?`, title, now, id)
+	return err
+}
+
 // AddMessage inserts a message for a session.
 func (s *SQLiteStore) AddMessage(sessionID string, msg llm.Message) error {
 	_, err := s.db.Exec(

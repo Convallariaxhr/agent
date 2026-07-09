@@ -82,10 +82,74 @@ class ConvallariaApp {
         this.el.sessionList.innerHTML = this.sessions.map(s =>
             `<div class="session-item${s.ID === this.currentSessionId ? ' active' : ''}"
                   data-id="${s.ID}"
-                  onclick="app.switchSession('${s.ID}')">
-                ${this.escapeHtml(s.Title || 'Untitled')}
+                  onclick="app.switchSession('${s.ID}')"
+                  oncontextmenu="app.showSessionMenu(event, '${s.ID}')">
+                <span class="session-title">${this.escapeHtml(s.Title || 'Untitled')}</span>
             </div>`
         ).join('');
+
+        // Close context menu on click outside
+        if (!this._menuListener) {
+            this._menuListener = () => this.hideSessionMenu();
+            document.addEventListener('click', this._menuListener);
+        }
+    }
+
+    showSessionMenu(e, id) {
+        e.preventDefault();
+        this.hideSessionMenu();
+        const menu = document.createElement('div');
+        menu.className = 'context-menu';
+        menu.id = 'session-context-menu';
+        menu.innerHTML = `<div class="context-menu-item" onclick="app.renameSession('${id}')">✏️ Rename</div>`;
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        document.body.appendChild(menu);
+        this._contextId = id;
+    }
+
+    hideSessionMenu() {
+        const menu = document.getElementById('session-context-menu');
+        if (menu) menu.remove();
+    }
+
+    renameSession(id) {
+        this.hideSessionMenu();
+        const item = document.querySelector(`.session-item[data-id="${id}"]`);
+        if (!item) return;
+        const titleSpan = item.querySelector('.session-title');
+        const oldTitle = titleSpan.textContent;
+        const input = document.createElement('input');
+        input.className = 'session-rename-input';
+        input.value = oldTitle === 'Untitled' ? '' : oldTitle;
+        input.placeholder = 'Session name...';
+        titleSpan.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const save = async () => {
+            const newTitle = input.value.trim() || 'Untitled';
+            try {
+                await fetch(`/api/sessions/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle }),
+                });
+            } catch (e) {
+                console.error('Rename failed:', e);
+            }
+            const span = document.createElement('span');
+            span.className = 'session-title';
+            span.textContent = newTitle;
+            input.replaceWith(span);
+            this.loadSessions();
+        };
+
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+            if (e.key === 'Escape') { input.value = oldTitle; input.blur(); }
+        });
     }
 
     switchSession(id) {
