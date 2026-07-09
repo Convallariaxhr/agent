@@ -183,6 +183,7 @@ html, body {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
 }
 
 .chat-container {
@@ -193,6 +194,7 @@ html, body {
     width: 100%;
     margin: 0 auto;
     padding: 0 24px;
+    min-height: 0;
 }
 
 .chat-messages {
