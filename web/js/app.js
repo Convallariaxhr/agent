@@ -3,20 +3,6 @@
 // Convallaria Web UI — main application logic.
 // Handles chat messages, session management, SSE streaming, and panel toggling.
 
-// Lily of the Valley avatar SVG (shared across all instances)
-const LLM_AVATAR = `<svg class="msg-avatar-icon" width="28" height="28" viewBox="0 0 100 100" fill="none">
-  <circle cx="50" cy="50" r="48" fill="#bd9fff" opacity="0.15"/>
-  <circle cx="50" cy="50" r="46" fill="none" stroke="#bd9fff" stroke-width="2" opacity="0.7"/>
-  <path d="M50 40 Q40 36 32 44 Q24 52 32 60 Q40 66 50 64 Q60 66 68 60 Q76 52 68 44 Q60 36 50 40Z" fill="white" opacity="0.95"/>
-  <circle cx="44" cy="50" r="3" fill="#2a2830"/>
-  <circle cx="45" cy="49" r="1.2" fill="white"/>
-  <circle cx="56" cy="50" r="3" fill="#2a2830"/>
-  <circle cx="57" cy="49" r="1.2" fill="white"/>
-  <ellipse cx="42" cy="56" rx="3" ry="1.5" fill="#bd9fff" opacity="0.5"/>
-  <ellipse cx="58" cy="56" rx="3" ry="1.5" fill="#bd9fff" opacity="0.5"/>
-  <circle cx="50" cy="38" r="3.5" fill="#bd9fff" opacity="0.6"/>
-</svg>`;
-
 class ConvallariaApp {
     constructor() {
         this.currentSessionId = '';
@@ -219,8 +205,7 @@ class ConvallariaApp {
     appendMessage(role, content) {
         const div = document.createElement('div');
         div.className = `message ${role}`;
-        const avatar = role === 'assistant' ? LLM_AVATAR : '';
-        div.innerHTML = `${avatar}<div class="message-bubble">${this.escapeHtml(content)}</div>`;
+        div.innerHTML = `<div class="message-bubble">${this.escapeHtml(content)}</div>`;
         this.el.chatMessages.appendChild(div);
         this.scrollToBottom();
     }
@@ -230,7 +215,7 @@ class ConvallariaApp {
         if (!el) {
             el = document.createElement('div');
             el.className = 'message assistant streaming';
-            el.innerHTML = `${LLM_AVATAR}<div class="message-bubble"></div>`;
+            el.innerHTML = '<div class="message-bubble"></div>';
             this.el.chatMessages.appendChild(el);
         }
         el.querySelector('.message-bubble').textContent = content;
