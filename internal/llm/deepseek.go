@@ -17,11 +17,12 @@ const defaultDeepSeekBaseURL = "https://api.deepseek.com/v1"
 
 // DeepSeekProvider implements Provider using the DeepSeek API (OpenAI-compatible).
 type DeepSeekProvider struct {
-	apiKey  string
-	model   string
-	baseURL string
-	client  *http.Client
-	tools   []ToolDef
+	apiKey      string
+	model       string
+	baseURL     string
+	client      *http.Client
+	tools       []ToolDef
+	forceTool   bool
 }
 
 // NewDeepSeek creates a new DeepSeek provider.
@@ -40,6 +41,11 @@ func NewDeepSeek(apiKey, model string) *DeepSeekProvider {
 // SetTools configures the tools available to the LLM.
 func (d *DeepSeekProvider) SetTools(tools []ToolDef) {
 	d.tools = tools
+}
+
+// ForceToolUse forces the next ChatSync call to require at least one tool call.
+func (d *DeepSeekProvider) ForceToolUse() {
+	d.forceTool = true
 }
 
 // chatRequest is the OpenAI-compatible request body.
@@ -77,7 +83,10 @@ type streamChunk struct {
 // ChatSync sends a synchronous chat request and returns the full response.
 func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*Response, error) {
 	toolChoice := ""
-	if len(d.tools) > 0 {
+	if d.forceTool {
+		toolChoice = "required"
+		d.forceTool = false
+	} else if len(d.tools) > 0 {
 		toolChoice = "auto"
 	}
 	body := chatRequest{

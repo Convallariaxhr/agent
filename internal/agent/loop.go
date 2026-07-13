@@ -97,9 +97,13 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 		if actions.IsStop() {
 			// Detect if user asked for action but LLM just talked without doing anything
 			if a.detectHallucination(userInput, resp.Text) && turn < 2 {
+				// Force the next call to use tools
+				if fp, ok := a.config.Provider.(interface{ ForceToolUse() }); ok {
+					fp.ForceToolUse()
+				}
 				messages = append(messages,
 					llm.Message{Role: "assistant", Content: resp.Text},
-					llm.Message{Role: "user", Content: "You said you completed the task but you didn't actually use any tools. Please DO it now — call the appropriate tool (file_write, file_read, shell_run, etc.) to actually perform the operation. Do not just describe what you would do."},
+					llm.Message{Role: "user", Content: "You claimed to complete the task but didn't call any tools. You MUST use the tools now to actually perform the requested operation."},
 				)
 				continue
 			}
