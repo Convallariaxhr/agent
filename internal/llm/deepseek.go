@@ -83,11 +83,8 @@ type streamChunk struct {
 // ChatSync sends a synchronous chat request and returns the full response.
 func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*Response, error) {
 	toolChoice := ""
-	if d.forceTool {
+	if len(d.tools) > 0 {
 		toolChoice = "required"
-		d.forceTool = false
-	} else if len(d.tools) > 0 {
-		toolChoice = "auto"
 	}
 	body := chatRequest{
 		Model:      d.model,
@@ -141,7 +138,7 @@ func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*R
 func (d *DeepSeekProvider) Chat(ctx context.Context, messages []Message) (<-chan StreamEvent, error) {
 	toolChoice := ""
 	if len(d.tools) > 0 {
-		toolChoice = "auto"
+		toolChoice = "required"
 	}
 	body := chatRequest{
 		Model:      d.model,
