@@ -134,10 +134,36 @@
 | 19:50 | 交互式文件浏览器 | 目录导航、文件内容预览、面包屑路径 |
 | 19:55 | 会话重命名 | 右键菜单 → 内联编辑，SQLite 持久化 |
 
+### 核心机制修复（晚上）
+
+| 时间 | 问题 | 修复 |
+|------|------|------|
+| 20:00 | Agent 无对话历史 — 每次 Run() 新建空消息列表，LLM 没有上下文 | Run() 接受 history 参数，handler 从 session 加载历史 |
+| 20:05 | LLM 无工具定义 — 未发送 tools 给 API，LLM 永远不会调用工具 | chatRequest 加 Tools 字段，每个 tool 提供 JSON Schema |
+| 20:08 | 文件工具不认 workspace — 相对路径直接操作 CWD 而非 workspace | file_read/write/search 支持 workspace 相对路径解析 |
+| 20:10 | system prompt 简陋 — 不告诉 LLM 工作目录和可用工具 | 动态注入 workspace + 工具列表 + CRITICAL RULES |
+| 20:12 | CONVALLARIA_API_KEY 被静默丢弃 | cfg.LLM.APIKey 正确赋值，移除无用的 credential 包 |
+
+### OpenCode 代码审查修复（晚上）
+
+| 时间 | 严重度 | 修复数量 |
+|------|--------|---------|
+| 20:30 | 🔴 Critical | 4 个（Anthropic 无工具、SSE 单字符、防护栏路径不一致、API Key 丢弃） |
+| 20:35 | 🟠 Important | 10 个（HTTP 无超时、文件 API 无限制、无输入验证、Docker 版本、ToolCall 不保存等） |
+| 20:40 | 🟡 补充 | 6 个（build 解析增强、Anthropic 流式工具、rune bug、路径遍历等） |
+
+### Function Calling 格式修复（晚上）
+
+| 时间 | 问题 | 修复 |
+|------|------|------|
+| 21:00 | DeepSeek API 400: `tools[0] missing field type` | 工具定义包一层 `{type: "function", function: {...}}` |
+| 21:05 | DeepSeek API 400: `messages[4] missing field type` | ToolCall 结构体加 `Type: "function"` 字段 |
+
 ## 最终统计
 
-- **总 commits**: 30+
+- **总 commits**: 35+
 - **测试数量**: 52 个（全部通过）
 - **Go 包数量**: 14 个
 - **多 Provider**: DeepSeek / OpenAI / Anthropic / Mock
 - **部署**: Docker + GitHub Actions + GitLab CI
+- **审查**: OpenCode 发现 37 个问题，修复 14 个 Critical/Important
