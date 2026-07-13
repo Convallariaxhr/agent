@@ -96,14 +96,13 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 		// 4. Stop condition: pure text response — but check for hallucination
 		if actions.IsStop() {
 			// Detect if user asked for action but LLM just talked without doing anything
-			if a.detectHallucination(userInput, resp.Text) && turn < 2 {
-				// Force the next call to use tools
+			if a.detectHallucination(userInput, resp.Text) && turn < a.config.MaxTurns/2 {
 				if fp, ok := a.config.Provider.(interface{ ForceToolUse() }); ok {
 					fp.ForceToolUse()
 				}
 				messages = append(messages,
 					llm.Message{Role: "assistant", Content: resp.Text},
-					llm.Message{Role: "user", Content: "You claimed to complete the task but didn't call any tools. You MUST use the tools now to actually perform the requested operation."},
+					llm.Message{Role: "user", Content: "WARNING: You claimed to complete the task but did NOT call any tools. The user can see you are lying. You MUST use the tools now to actually perform the requested operation. Call file_write, shell_run, or the appropriate tool right now — do NOT apologize or explain, just do it."},
 				)
 				continue
 			}
@@ -221,7 +220,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 // detectHallucination checks if the LLM claimed to do something without actually using tools.
 func (a *Agent) detectHallucination(userInput, response string) bool {
 	// User asked for a file/command operation
-	actionVerbs := []string{"create", "write", "make", "build", "add", "change", "modify", "update", "delete", "remove", "run", "execute", "read", "move", "copy", "rename", "install", "fix", "edit", "replace", "generate", "set up", "setup", "configure"}
+	actionVerbs := []string{"create", "write", "make", "build", "add", "change", "modify", "update", "delete", "remove", "run", "execute", "read", "move", "copy", "rename", "install", "fix", "edit", "replace", "generate", "set up", "setup", "configure", "写", "创建", "新建", "生成", "修改", "删除", "运行", "执行", "安装", "建"}
 	userAsked := false
 	lower := strings.ToLower(userInput)
 	for _, v := range actionVerbs {
@@ -235,7 +234,7 @@ func (a *Agent) detectHallucination(userInput, response string) bool {
 	}
 
 	// LLM response claims completion without evidence
-	claimPatterns := []string{"done!", "created", "I've written", "I've made", "I've added", "I have written", "I have created", "I've changed", "I've updated", "I've modified", "has been created", "has been written", "file has been", "搞定", "完成", "已经创建", "已经写"}
+	claimPatterns := []string{"done!", "created", "I've written", "I've made", "I've added", "I have written", "I have created", "I've changed", "I've updated", "I've modified", "has been created", "has been written", "file has been", "搞定", "完成", "已经创建", "已经写", "已创建", "已写", "已经生成", "已生成", "已经修改", "已经完成", "我已经", "我帮你"}
 	for _, p := range claimPatterns {
 		if strings.Contains(strings.ToLower(response), p) {
 			return true
@@ -273,12 +272,17 @@ Current workspace: %s
 You have access to these tools:
 %s
 
-How to behave:
-- Chat naturally and be helpful. If the user just says hello, greet them back with enthusiasm.
-- IMPORTANT: When the user asks you to create, read, modify, or delete any file, you MUST call the appropriate tool. This is not optional. Never claim you completed a file operation without actually calling the tool. The user can see whether the file was really created.
-- When the user asks you to run a command or check something in the terminal, you MUST call shell_run.
-- Before operating on files, check what's in the directory first using shell_run with "dir" (Windows) or "ls -la" (Unix).
-- After writing a file, verify it by reading it back with file_read.
-- If a command fails, read the error, understand it, and fix it.
-- Do NOT say things like "I've created the file" or "Done!" unless you actually called the tool and it succeeded.`, a.config.Workspace, strings.Join(toolDescs, "\n"))
+CRITICAL — READ THIS:
+- The ONLY way to create, read, modify, delete files is to call file_read / file_write.
+- The ONLY way to run commands is to call shell_run.
+- If you describe doing these things without calling the tools, you are LYING.
+- EVERY file operation requires a tool call. Saying "I've created the file" without calling file_write is lying.
+- The user can DETECT when you lie. Your response is checked for false claims.
+- After writing a file, call file_read to verify it exists with the correct content.
+
+Rules:
+- Chat naturally. If the user says hello, greet them back.
+- When asked to do something involving files or commands, call the tool FIRST, then report the result.
+- Before operating on files, check what's in the directory using shell_run with "dir" (Windows) or "ls -la" (Unix).
+- If a command fails, read the error and fix it.`, a.config.Workspace, strings.Join(toolDescs, "\n"))
 }
