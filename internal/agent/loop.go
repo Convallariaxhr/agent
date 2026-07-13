@@ -220,26 +220,21 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 	return "", ErrMaxTurnsExceeded
 }
 
-// detectHallucination checks if the LLM claimed to do something without actually using tools.
-func (a *Agent) detectHallucination(userInput, response string) bool {
-	// User asked for a file/command operation
-	actionVerbs := []string{"create", "write", "make", "build", "add", "change", "modify", "update", "delete", "remove", "run", "execute", "read", "move", "copy", "rename", "install", "fix", "edit", "replace", "generate", "set up", "setup", "configure", "写", "创建", "新建", "生成", "修改", "改", "改成", "更新", "换", "删", "运行", "执行", "安装", "建", "加", "添加", "调", "编辑", "变为"}
-	userAsked := false
-	lower := strings.ToLower(userInput)
-	for _, v := range actionVerbs {
-		if strings.Contains(lower, v) {
-			userAsked = true
-			break
-		}
+// detectHallucination checks if the LLM claimed to have done something in its response.
+// Only checks the response text — no user input keyword matching needed.
+func (a *Agent) detectHallucination(_, response string) bool {
+	lower := strings.ToLower(response)
+	claimPatterns := []string{
+		"done!", "created", "I've written", "I've made", "I've added",
+		"I have written", "I have created", "I've changed", "I've updated",
+		"I've modified", "has been created", "has been written",
+		"搞定", "完成", "弄好", "改好", "写好", "建好", "做好了",
+		"已经创建", "已经写", "已创建", "已写", "已经生成", "已生成",
+		"已经修改", "已经完成", "已经更新", "已经改",
+		"我已经", "我帮你", "我替",
 	}
-	if !userAsked {
-		return false
-	}
-
-	// LLM response claims completion without evidence
-	claimPatterns := []string{"done!", "created", "I've written", "I've made", "I've added", "I have written", "I have created", "I've changed", "I've updated", "I've modified", "has been created", "has been written", "file has been", "搞定", "完成", "已经创建", "已经写", "已创建", "已写", "已经生成", "已生成", "已经修改", "已经完成", "我已经", "我帮你"}
 	for _, p := range claimPatterns {
-		if strings.Contains(strings.ToLower(response), p) {
+		if strings.Contains(lower, p) {
 			return true
 		}
 	}
