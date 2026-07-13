@@ -651,6 +651,44 @@ html, body {
     tab-size: 4;
 }
 
+/* === Thinking Indicator === */
+.thinking-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    margin-bottom: 16px;
+    animation: fadeIn 0.3s var(--ease-out);
+}
+
+.thinking-spinner {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    animation: spin 1.2s linear infinite;
+}
+
+.thinking-spinner svg {
+    width: 100%;
+    height: 100%;
+}
+
+.thinking-text {
+    font-size: 13px;
+    color: var(--color-on-surface-dim);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+
 /* === Config Panel === */
 .config-section {
     margin-bottom: 16px;

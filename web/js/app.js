@@ -219,6 +219,7 @@ class ConvallariaApp {
         this.appendMessage('user', message);
 
         this.setStreaming(true);
+        this.showThinking('正在思考...');
 
         this.sse = new SSEClient('/api/chat');
         let buffer = '';
@@ -229,6 +230,7 @@ class ConvallariaApp {
         });
 
         this.sse.on('token', (data) => {
+            if (!buffer) this.showThinking('正在回复...');
             buffer += data.token;
             this.updateStreamingMessage(buffer);
         });
@@ -319,7 +321,31 @@ class ConvallariaApp {
             this.el.inputWrapper.classList.remove('streaming');
             this.el.btnSend.disabled = false;
             this.el.chatInput.focus();
+            this.hideThinking();
         }
+    }
+
+    showThinking(text) {
+        this.hideThinking();
+        const div = document.createElement('div');
+        div.className = 'thinking-indicator';
+        div.id = 'thinking-indicator';
+        div.innerHTML = `
+            <div class="thinking-spinner">
+                <svg viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#bd9fff" stroke-width="2" opacity="0.2"/>
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#bd9fff" stroke-width="2"
+                            stroke-dasharray="72 216" stroke-linecap="round" opacity="0.9"/>
+                </svg>
+            </div>
+            <span class="thinking-text">${this.escapeHtml(text)}</span>`;
+        this.el.chatMessages.appendChild(div);
+        this.scrollToBottom();
+    }
+
+    hideThinking() {
+        const el = document.getElementById('thinking-indicator');
+        if (el) el.remove();
     }
 
     // ── Panel Toggle ────────────────────────────────────
