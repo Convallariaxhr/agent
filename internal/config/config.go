@@ -20,6 +20,7 @@ type Config struct {
 type LLMConfig struct {
 	Provider    string  `yaml:"provider"`
 	Model       string  `yaml:"model"`
+	BaseURL     string  `yaml:"base_url"`
 	MaxTokens   int     `yaml:"max_tokens"`
 	Temperature float64 `yaml:"temperature"`
 	APIKeyEnv   string  `yaml:"api_key_env"`
@@ -139,5 +140,8 @@ func (c *Config) applyEnvOverrides() {
 	} else {
 		// Fall back to provider-specific env var
 		c.LLM.APIKey = os.Getenv(c.LLM.APIKeyEnv)
+	}
+	if v := os.Getenv("CONVALLARIA_BASE_URL"); v != "" {
+		c.LLM.BaseURL = v
 	}
 }

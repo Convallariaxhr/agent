@@ -27,13 +27,18 @@ type DeepSeekProvider struct {
 
 // NewDeepSeek creates a new DeepSeek provider.
 func NewDeepSeek(apiKey, model string) *DeepSeekProvider {
+	return NewDeepSeekWithURL(apiKey, model, defaultDeepSeekBaseURL)
+}
+
+// NewDeepSeekWithURL creates a new DeepSeek provider with a custom base URL.
+func NewDeepSeekWithURL(apiKey, model, baseURL string) *DeepSeekProvider {
 	if model == "" {
 		model = "deepseek-chat"
 	}
 	return &DeepSeekProvider{
 		apiKey:  apiKey,
 		model:   model,
-		baseURL: defaultDeepSeekBaseURL,
+		baseURL: baseURL,
 		client:  &http.Client{Timeout: 120 * time.Second},
 	}
 }

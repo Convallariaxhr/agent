@@ -41,13 +41,21 @@ func main() {
 		switch cfg.LLM.Provider {
 		case "openai":
 			fmt.Printf("Using OpenAI provider (model: %s)\n", cfg.LLM.Model)
-			provider = llm.NewOpenAI(apiKey, cfg.LLM.Model)
+			if cfg.LLM.BaseURL != "" {
+				provider = llm.NewOpenAIWithURL(apiKey, cfg.LLM.Model, cfg.LLM.BaseURL)
+			} else {
+				provider = llm.NewOpenAI(apiKey, cfg.LLM.Model)
+			}
 		case "anthropic":
 			fmt.Printf("Using Anthropic provider (model: %s)\n", cfg.LLM.Model)
 			provider = llm.NewAnthropic(apiKey, cfg.LLM.Model)
 		default:
 			fmt.Printf("Using DeepSeek provider (model: %s)\n", cfg.LLM.Model)
-			provider = llm.NewDeepSeek(apiKey, cfg.LLM.Model)
+			if cfg.LLM.BaseURL != "" {
+				provider = llm.NewDeepSeekWithURL(apiKey, cfg.LLM.Model, cfg.LLM.BaseURL)
+			} else {
+				provider = llm.NewDeepSeek(apiKey, cfg.LLM.Model)
+			}
 		}
 	} else {
 		fmt.Println("No API key found — using mock provider for demo")

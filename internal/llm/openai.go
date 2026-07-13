@@ -27,13 +27,18 @@ type OpenAIProvider struct {
 
 // NewOpenAI creates a new OpenAI provider.
 func NewOpenAI(apiKey, model string) *OpenAIProvider {
+	return NewOpenAIWithURL(apiKey, model, defaultOpenAIBaseURL)
+}
+
+// NewOpenAIWithURL creates a new OpenAI provider with a custom base URL.
+func NewOpenAIWithURL(apiKey, model, baseURL string) *OpenAIProvider {
 	if model == "" {
 		model = "gpt-4o"
 	}
 	return &OpenAIProvider{
 		apiKey:  apiKey,
 		model:   model,
-		baseURL: defaultOpenAIBaseURL,
+		baseURL: baseURL,
 		client:  &http.Client{Timeout: 120 * time.Second},
 	}
 }
