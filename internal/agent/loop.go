@@ -83,6 +83,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 	messages = append(messages, history...)
 	messages = append(messages, llm.Message{Role: "user", Content: userInput})
 
+	toolsExecuted := 0
 	for turn := 0; turn < a.config.MaxTurns; turn++ {
 		// 2. Call LLM
 		resp, err := a.config.Provider.ChatSync(ctx, messages)
@@ -95,8 +96,8 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 
 		// 4. Stop condition: pure text response — but check for hallucination
 		if actions.IsStop() {
-			// Detect if user asked for action but LLM just talked without doing anything
-			if a.detectHallucination(userInput, resp.Text) && turn < a.config.MaxTurns/2 {
+			// Only flag as hallucination if NO tools have been executed at all in this Run
+			if toolsExecuted == 0 && a.detectHallucination(userInput, resp.Text) && turn < a.config.MaxTurns/2 {
 				if fp, ok := a.config.Provider.(interface{ ForceToolUse() }); ok {
 					fp.ForceToolUse()
 				}
@@ -179,6 +180,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 					Content:    fmt.Sprintf("ERROR: %v", err),
 					ToolCallID: action.ToolCallID,
 				})
+				toolsExecuted++
 				continue
 			}
 
@@ -192,6 +194,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 				Content:    content,
 				ToolCallID: action.ToolCallID,
 			})
+			toolsExecuted++
 
 			// Track if code files were modified
 			if action.Tool == "file_write" {
@@ -220,7 +223,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 // detectHallucination checks if the LLM claimed to do something without actually using tools.
 func (a *Agent) detectHallucination(userInput, response string) bool {
 	// User asked for a file/command operation
-	actionVerbs := []string{"create", "write", "make", "build", "add", "change", "modify", "update", "delete", "remove", "run", "execute", "read", "move", "copy", "rename", "install", "fix", "edit", "replace", "generate", "set up", "setup", "configure", "写", "创建", "新建", "生成", "修改", "删除", "运行", "执行", "安装", "建"}
+	actionVerbs := []string{"create", "write", "make", "build", "add", "change", "modify", "update", "delete", "remove", "run", "execute", "read", "move", "copy", "rename", "install", "fix", "edit", "replace", "generate", "set up", "setup", "configure", "写", "创建", "新建", "生成", "修改", "改", "改成", "更新", "换", "删", "运行", "执行", "安装", "建", "加", "添加", "调", "编辑", "变为"}
 	userAsked := false
 	lower := strings.ToLower(userInput)
 	for _, v := range actionVerbs {
