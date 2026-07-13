@@ -66,7 +66,7 @@ func TestServer_SessionListEndpoint(t *testing.T) {
 
 func TestSSEWriter_WriteEvent(t *testing.T) {
 	w := httptest.NewRecorder()
-	sse := NewSSEWriter(w)
+	sse := NewSSEWriter(w, nil)
 
 	sse.WriteEvent("token", `{"token":"H"}`)
 	sse.WriteEvent("done", `{}`)

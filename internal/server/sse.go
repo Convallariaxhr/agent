@@ -2,8 +2,10 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // SSEWriter writes Server-Sent Events to an http.ResponseWriter.
@@ -13,7 +15,8 @@ type SSEWriter struct {
 }
 
 // NewSSEWriter creates a new SSE writer and sends the initial headers.
-func NewSSEWriter(w http.ResponseWriter) *SSEWriter {
+// If ctx is provided, a keepalive heartbeat is started that stops when ctx is cancelled.
+func NewSSEWriter(w http.ResponseWriter, ctx context.Context) *SSEWriter {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -29,7 +32,26 @@ func NewSSEWriter(w http.ResponseWriter) *SSEWriter {
 	fmt.Fprintf(w, ": connected\n\n")
 	flusher.Flush()
 
-	return &SSEWriter{w: w, flusher: flusher}
+	s := &SSEWriter{w: w, flusher: flusher}
+
+	// Keepalive heartbeat every 15 seconds, stopped by context cancellation
+	if ctx != nil {
+		go func() {
+			ticker := time.NewTicker(15 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					fmt.Fprintf(s.w, ": heartbeat\n\n")
+					s.flusher.Flush()
+				}
+			}
+		}()
+	}
+
+	return s
 }
 
 // WriteEvent writes an SSE event with the given type and data.

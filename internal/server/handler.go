@@ -124,7 +124,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		history = history[:len(history)-1]
 	}
 
-	sse := NewSSEWriter(w)
+	sse := NewSSEWriter(w, r.Context())
 	sse.WriteEvent("session", jsonEncode(map[string]string{"id": sessID}))
 
 	// Set up HITL approval for this request
