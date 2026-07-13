@@ -101,7 +101,8 @@ class ConvallariaApp {
         const menu = document.createElement('div');
         menu.className = 'context-menu';
         menu.id = 'session-context-menu';
-        menu.innerHTML = `<div class="context-menu-item" onclick="app.renameSession('${id}')">✏️ Rename</div>`;
+        menu.innerHTML = `<div class="context-menu-item" onclick="app.renameSession('${id}')">✏️ Rename</div>
+            <div class="context-menu-item context-menu-danger" onclick="app.deleteSession('${id}')">🗑️ Delete</div>`;
         menu.style.left = e.clientX + 'px';
         menu.style.top = e.clientY + 'px';
         document.body.appendChild(menu);
@@ -150,6 +151,19 @@ class ConvallariaApp {
             if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
             if (e.key === 'Escape') { input.value = oldTitle; input.blur(); }
         });
+    }
+
+    async deleteSession(id) {
+        this.hideSessionMenu();
+        try {
+            await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+        } catch (e) {
+            console.error('Delete failed:', e);
+        }
+        if (this.currentSessionId === id) {
+            this.newChat();
+        }
+        this.loadSessions();
     }
 
     switchSession(id) {

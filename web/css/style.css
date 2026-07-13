@@ -146,6 +146,14 @@ html, body {
     background: rgba(255, 255, 255, 0.08);
 }
 
+.context-menu-danger {
+    color: var(--color-error);
+}
+
+.context-menu-danger:hover {
+    background: rgba(242, 184, 181, 0.15);
+}
+
 /* Inline rename */
 .session-rename-input {
     background: var(--color-surface);
