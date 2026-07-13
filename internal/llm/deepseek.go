@@ -44,10 +44,11 @@ func (d *DeepSeekProvider) SetTools(tools []ToolDef) {
 
 // chatRequest is the OpenAI-compatible request body.
 type chatRequest struct {
-	Model    string       `json:"model"`
-	Messages []Message    `json:"messages"`
-	Stream   bool         `json:"stream"`
-	Tools    []openAITool `json:"tools,omitempty"`
+	Model      string       `json:"model"`
+	Messages   []Message    `json:"messages"`
+	Stream     bool         `json:"stream"`
+	Tools      []openAITool `json:"tools,omitempty"`
+	ToolChoice string       `json:"tool_choice,omitempty"`
 }
 
 // chatResponse is the OpenAI-compatible sync response.
@@ -75,11 +76,16 @@ type streamChunk struct {
 
 // ChatSync sends a synchronous chat request and returns the full response.
 func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*Response, error) {
+	toolChoice := ""
+	if len(d.tools) > 0 {
+		toolChoice = "auto"
+	}
 	body := chatRequest{
-		Model:    d.model,
-		Messages: messages,
-		Stream:   false,
-		Tools:    toOpenAITools(d.tools),
+		Model:      d.model,
+		Messages:   messages,
+		Stream:     false,
+		Tools:      toOpenAITools(d.tools),
+		ToolChoice: toolChoice,
 	}
 
 	reqBytes, err := json.Marshal(body)
@@ -124,11 +130,16 @@ func (d *DeepSeekProvider) ChatSync(ctx context.Context, messages []Message) (*R
 
 // Chat sends a streaming chat request and returns a channel of events.
 func (d *DeepSeekProvider) Chat(ctx context.Context, messages []Message) (<-chan StreamEvent, error) {
+	toolChoice := ""
+	if len(d.tools) > 0 {
+		toolChoice = "auto"
+	}
 	body := chatRequest{
-		Model:    d.model,
-		Messages: messages,
-		Stream:   true,
-		Tools:    toOpenAITools(d.tools),
+		Model:      d.model,
+		Messages:   messages,
+		Stream:     true,
+		Tools:      toOpenAITools(d.tools),
+		ToolChoice: toolChoice,
 	}
 
 	reqBytes, err := json.Marshal(body)
