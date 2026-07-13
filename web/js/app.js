@@ -330,14 +330,10 @@ class ConvallariaApp {
         const div = document.createElement('div');
         div.className = 'thinking-indicator';
         div.id = 'thinking-indicator';
+        let bars = '';
+        for (let i = 0; i < 8; i++) bars += '<span class="bar"></span>';
         div.innerHTML = `
-            <div class="thinking-spinner">
-                <svg viewBox="0 0 100 100" fill="none">
-                    <circle cx="50" cy="50" r="46" fill="none" stroke="#bd9fff" stroke-width="2" opacity="0.2"/>
-                    <circle cx="50" cy="50" r="46" fill="none" stroke="#bd9fff" stroke-width="2"
-                            stroke-dasharray="72 216" stroke-linecap="round" opacity="0.9"/>
-                </svg>
-            </div>
+            <div class="thinking-spinner">${bars}</div>
             <span class="thinking-text">${this.escapeHtml(text)}</span>`;
         this.el.chatMessages.appendChild(div);
         this.scrollToBottom();
