@@ -125,7 +125,6 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sse := NewSSEWriter(w)
-	defer sse.Close()
 	sse.WriteEvent("session", jsonEncode(map[string]string{"id": sessID}))
 
 	// Set up HITL approval for this request
@@ -310,8 +309,8 @@ func (s *Server) handleFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dir := r.URL.Query().Get("dir")
-	if dir == "" {
-		dir = "."
+	if dir == "" || dir == "." {
+		dir = s.agent.Workspace()
 	}
 
 	entries, err := listDir(dir)

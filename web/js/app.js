@@ -342,7 +342,7 @@ class ConvallariaApp {
     }
 
     async loadFiles() {
-        this.currentFileDir = this.currentFileDir || '.';
+        this.currentFileDir = this.currentFileDir || '';
         try {
             const resp = await fetch(`/api/files?dir=${encodeURIComponent(this.currentFileDir)}`);
             const entries = await resp.json();
@@ -360,7 +360,7 @@ class ConvallariaApp {
                     </div>`
                 ).join('');
             }
-            breadcrumb.textContent = this.currentFileDir === '.' ? '/' : this.currentFileDir;
+            breadcrumb.textContent = this.currentFileDir || '/';
         } catch (e) {
             console.error('Failed to load files:', e);
         }
@@ -368,23 +368,23 @@ class ConvallariaApp {
 
     navigateFile(name, isDir) {
         if (isDir) {
-            this.currentFileDir = this.currentFileDir === '.'
-                ? name
-                : this.currentFileDir + '/' + name;
+            this.currentFileDir = this.currentFileDir
+                ? this.currentFileDir + '/' + name
+                : name;
             this.loadFiles();
         } else {
-            const filePath = this.currentFileDir === '.'
-                ? name
-                : this.currentFileDir + '/' + name;
+            const filePath = this.currentFileDir
+                ? this.currentFileDir + '/' + name
+                : name;
             this.viewFile(filePath, name);
         }
     }
 
     goUpDir() {
-        if (!this.currentFileDir || this.currentFileDir === '.') return;
+        if (!this.currentFileDir) return;
         const parts = this.currentFileDir.split('/');
         parts.pop();
-        this.currentFileDir = parts.length ? parts.join('/') : '.';
+        this.currentFileDir = parts.length ? parts.join('/') : '';
         this.loadFiles();
     }
 

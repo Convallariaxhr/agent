@@ -21,6 +21,7 @@ import (
 func main() {
 	configPath := flag.String("config", "convallaria.yaml", "Path to config file")
 	port := flag.Int("port", 8080, "HTTP server port")
+	workspace := flag.String("workspace", "", "Override workspace directory (default: from config or current dir)")
 	flag.Parse()
 
 	// Load config
@@ -57,11 +58,17 @@ func main() {
 		provider.(*llm.MockProvider).AddResponse(llm.MockTextResponse("The code looks good. I've added comments and followed Go best practices. Want me to write tests for it as well?"))
 	}
 
+	// Override workspace from CLI flag if provided
+	w := cfg.Agent.Workspace
+	if *workspace != "" {
+		w = *workspace
+	}
+
 	// Create agent
 	ag := agent.New(agent.Config{
 		MaxTurns:  cfg.Agent.MaxTurns,
 		Provider:  provider,
-		Workspace: cfg.Agent.Workspace,
+		Workspace: w,
 	})
 
 	// Create session manager (SQLite-backed for persistence)

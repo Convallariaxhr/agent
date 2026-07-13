@@ -130,7 +130,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 					if c, ok := action.Params["command"].(string); ok {
 						cmd = c
 					}
-					resp, err := a.config.ApprovalHandler(ctx, ApprovalRequest{
+					resp, err := a.approvalHandler(ctx, ApprovalRequest{
 						Tool:    action.Tool,
 						Command: cmd,
 						Reason:  reason.Message,
