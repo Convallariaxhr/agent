@@ -38,7 +38,7 @@ func TestAgent_ToolCall_ExecutesAndReturnsResult(t *testing.T) {
 	mock.AddResponse(llm.MockToolCallResponse("call_1", "file_write",
 		`{"path":"`+filePath+`","content":"hello world"}`))
 	// Second response: text completion
-	mock.AddResponse(llm.MockTextResponse("Done! I've created hello.txt with 'hello world'."))
+	mock.AddResponse(llm.MockTextResponse("The file hello.txt now contains 'hello world'."))
 
 	agent := New(Config{
 		MaxTurns:  5,
@@ -50,7 +50,7 @@ func TestAgent_ToolCall_ExecutesAndReturnsResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp != "Done! I've created hello.txt with 'hello world'." {
+	if resp != "The file hello.txt now contains 'hello world'." {
 		t.Errorf("unexpected response: %q", resp)
 	}
 	// Verify file was actually created

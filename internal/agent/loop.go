@@ -93,8 +93,16 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 		// 3. Parse actions
 		actions := parser.Parse(resp)
 
-		// 4. Stop condition: pure text response
+		// 4. Stop condition: pure text response — but check for hallucination
 		if actions.IsStop() {
+			// Detect if user asked for action but LLM just talked without doing anything
+			if a.detectHallucination(userInput, resp.Text) && turn < 2 {
+				messages = append(messages,
+					llm.Message{Role: "assistant", Content: resp.Text},
+					llm.Message{Role: "user", Content: "You said you completed the task but you didn't actually use any tools. Please DO it now — call the appropriate tool (file_write, file_read, shell_run, etc.) to actually perform the operation. Do not just describe what you would do."},
+				)
+				continue
+			}
 			messages = append(messages, llm.Message{
 				Role:    "assistant",
 				Content: resp.Text,
@@ -204,6 +212,32 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 	}
 
 	return "", ErrMaxTurnsExceeded
+}
+
+// detectHallucination checks if the LLM claimed to do something without actually using tools.
+func (a *Agent) detectHallucination(userInput, response string) bool {
+	// User asked for a file/command operation
+	actionVerbs := []string{"create", "write", "make", "build", "add", "change", "modify", "update", "delete", "remove", "run", "execute", "read", "move", "copy", "rename", "install", "fix", "edit", "replace", "generate", "set up", "setup", "configure"}
+	userAsked := false
+	lower := strings.ToLower(userInput)
+	for _, v := range actionVerbs {
+		if strings.Contains(lower, v) {
+			userAsked = true
+			break
+		}
+	}
+	if !userAsked {
+		return false
+	}
+
+	// LLM response claims completion without evidence
+	claimPatterns := []string{"done!", "created", "I've written", "I've made", "I've added", "I have written", "I have created", "I've changed", "I've updated", "I've modified", "has been created", "has been written", "file has been", "搞定", "完成", "已经创建", "已经写"}
+	for _, p := range claimPatterns {
+		if strings.Contains(strings.ToLower(response), p) {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Agent) buildToolDefs() []llm.ToolDef {
