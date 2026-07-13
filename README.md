@@ -30,6 +30,26 @@ export DEEPSEEK_API_KEY=sk-your-key && go run ./cmd/convallaria/
 
 打开浏览器访问 `http://localhost:8080`
 
+## 切换 LLM 供应商
+
+支持三种 API，**无需修改代码**，通过环境变量或配置文件切换：
+
+| 供应商 | 环境变量 | 示例 |
+|--------|---------|------|
+| DeepSeek | `DEEPSEEK_API_KEY` | `$env:DEEPSEEK_API_KEY="sk-xxx"; go run ./cmd/convallaria/` |
+| OpenAI | `CONVALLARIA_API_KEY` + `CONVALLARIA_PROVIDER` | `$env:CONVALLARIA_PROVIDER="openai"; $env:CONVALLARIA_API_KEY="sk-xxx"; go run ./cmd/convallaria/` |
+| Anthropic (Claude) | `CONVALLARIA_API_KEY` + `CONVALLARIA_PROVIDER` | `$env:CONVALLARIA_PROVIDER="anthropic"; $env:CONVALLARIA_MODEL="claude-sonnet-4-20250514"; $env:CONVALLARIA_API_KEY="sk-ant-xxx"; go run ./cmd/convallaria/` |
+
+或创建 `convallaria.yaml` 配置文件：
+
+```yaml
+llm:
+  provider: anthropic           # deepseek / openai / anthropic
+  model: claude-sonnet-4-20250514
+```
+
+然后只需设 Key 环境变量即可。详细配置见下方[配置](#配置)章节。
+
 ### Docker 部署
 
 ```bash
