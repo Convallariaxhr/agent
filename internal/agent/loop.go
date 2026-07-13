@@ -97,7 +97,7 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 		// 4. Stop condition: pure text response — but check for hallucination
 		if actions.IsStop() {
 			// Only flag as hallucination if NO tools have been executed at all in this Run
-			if toolsExecuted == 0 && a.detectHallucination(userInput, resp.Text) && turn < a.config.MaxTurns/2 {
+			if toolsExecuted == 0 && a.detectHallucination(resp.Text) && turn < a.config.MaxTurns/2 {
 				if fp, ok := a.config.Provider.(interface{ ForceToolUse() }); ok {
 					fp.ForceToolUse()
 				}
@@ -222,18 +222,41 @@ func (a *Agent) Run(ctx context.Context, userInput string, history []llm.Message
 
 // detectHallucination checks if the LLM claimed to have done something in its response.
 // Only checks the response text — no user input keyword matching needed.
-func (a *Agent) detectHallucination(_, response string) bool {
+func (a *Agent) detectHallucination(response string) bool {
 	lower := strings.ToLower(response)
-	claimPatterns := []string{
-		"done!", "created", "I've written", "I've made", "I've added",
-		"I have written", "I have created", "I've changed", "I've updated",
-		"I've modified", "has been created", "has been written",
-		"搞定", "完成", "弄好", "改好", "写好", "建好", "做好了",
-		"已经创建", "已经写", "已创建", "已写", "已经生成", "已生成",
-		"已经修改", "已经完成", "已经更新", "已经改",
-		"我已经", "我帮你", "我替",
+	patterns := []string{
+		// English completion claims
+		"done", "created", "written", "updated", "modified", "changed",
+		"fixed", "added", "removed", "deleted", "replaced", "edited",
+		"completed", "finished", "ready", "success", "generated", "built",
+		"has been", "now has", "now contains", "should now", "you can now",
+		"I've ", "I have ", "I changed", "I updated",
+		// Chinese 了-completion (extremely common, high recall)
+		"好了", "完了", "可以了",
+		// Chinese resultative compounds
+		"搞定", "完成", "做好", "弄好", "写好", "改好", "建好", "加好", "换好",
+		"删好", "变好", "调好", "设好", "装好", "配好", "造好", "生成好",
+		// Chinese 已经 / 已 pattern
+		"已经", "已创建", "已写", "已生成", "已修改", "已完成", "已更新", "已替换",
+		"已添加", "已删除", "已改", "已变", "已设置", "已安装", "已配置",
+		// Chinese V了 pattern
+		"创建了", "写入了", "生成了", "修改了", "更新了", "添加了", "删除了",
+		"替换了", "改变了", "设置了", "调整了", "安装了", "配置了", "执行了",
+		"运行了", "保存了", "应用了", "构建了", "编译了",
+		// Chinese 好了 variants
+		"做好了", "弄好了", "写好了", "改好了", "建好了", "加好了", "换好了",
+		"删好了", "变好了", "调好了", "设好了",
+		// Chinese subject + action claims
+		"我已经", "我帮你", "我替你", "我为你", "我把它", "我已经把",
+		"我创建了", "我修改了", "我更新了", "我添加了",
+		// Chinese suggestion that work is done
+		"现在可以", "你可以", "请查看", "请打开", "请刷新", "请试试",
+		// Single-word indicators
+		"搞定!", "完成!", "好了!", "ok", "okay",
+		// Claims of checking
+		"确认了", "验证了", "检查了", "看到了", "找到了",
 	}
-	for _, p := range claimPatterns {
+	for _, p := range patterns {
 		if strings.Contains(lower, p) {
 			return true
 		}
